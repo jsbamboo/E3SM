@@ -294,6 +294,7 @@ subroutine diag_init()
 
    call addfld ('MQ',(/ 'lev' /), 'A','kg/m2','Water vapor mass in layer')
    call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water')
+   call addfld ('TTQ',horiz_only,   'A', 'kg/m/s','Total (vertically integrated) vapor transport') !addfld('TTQ') (zhang73)
    call addfld ('TUQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) zonal water flux')
    call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
    call addfld ('TUH',horiz_only,    'A','W/m',   'Total (vertically integrated) zonal MSE flux')
@@ -931,6 +932,8 @@ end subroutine diag_conv_tend_ini
     real(r8) ftem(pcols,pver) ! temporary workspace
     real(r8) ftem1(pcols,pver) ! another temporary workspace
     real(r8) ftem2(pcols,pver) ! another temporary workspace
+    real(r8) ftem4(pcols,pver) ! another temporary workspace !ftem4,5 (zhang73)
+    real(r8) ftem5(pcols,pver) ! another temporary workspace
     real(r8) psl_tmp(pcols)   ! Sea Level Pressure
     real(r8) z3(pcols,pver)   ! geo-potential height
     real(r8) p_surf(pcols)    ! data interpolated to a pressure surface
@@ -1268,17 +1271,19 @@ end subroutine diag_conv_tend_ini
 !
 ! Mass of vertically integrated q flux
 !
-    ftem(:ncol,:) = state%u(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+! addfld('TTQ') (zhang73)
+    ftem4(:ncol,:) = state%u(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+    ftem5(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
     do k=2,pver
-       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       ftem4(:ncol,1) = ftem4(:ncol,1) + ftem4(:ncol,k)
+       ftem5(:ncol,1) = ftem5(:ncol,1) + ftem5(:ncol,k)
     end do
-    call outfld ('TUQ     ',ftem, pcols   ,lchnk     )
 
-    ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
-    do k=2,pver
-       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-    end do
-    call outfld ('TVQ     ',ftem, pcols   ,lchnk     )
+    ftem(:ncol,1) = sqrt( ftem4(:ncol,1)**2 + ftem5(:ncol,1)**2)
+
+    call outfld ('TUQ     ',ftem4, pcols   ,lchnk     )
+    call outfld ('TVQ     ',ftem5, pcols   ,lchnk     )
+    call outfld ('TTQ     ',ftem, pcols   ,lchnk     )
 
 !
 ! Mass of vertically integrated MSE flux
