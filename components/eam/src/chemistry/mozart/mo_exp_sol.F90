@@ -121,6 +121,11 @@ contains
           end do
        else
           do i = 1,ncol
+             do k = 1,ltrop(i) ! for emissions in the stratosphere: NO2 as high as 15 km
+                chem_prod(i,k,l) = ind_prd(i,k,m)
+                chem_loss(i,k,l) = 0.0_r8
+                base_sol(i,k,l) = base_sol(i,k,l) + delt*ind_prd(i,k,m) ! add emissions above tropopause
+             end do
              do k = ltrop(i)+1,pver
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                 chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
@@ -153,6 +158,10 @@ contains
            end do
        else
            do i = 1,ncol
+              do k = 1,ltrop(i) ! for emissions in the stratosphere: NO2 as high as 15 km
+                 chemmp_prod(i,k,l) = ind_prd(i,k,m) ! add NO2 emis to UCIchem diagnostics when above tropopause
+                 chemmp_loss(i,k,l) = 0.0_r8 ! assume no chem related loss when above tropopause
+              end do
               do k = ltrop(i)+1,pver
                  chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                  chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
