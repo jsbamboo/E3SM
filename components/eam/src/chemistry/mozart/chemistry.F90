@@ -1768,7 +1768,16 @@ end function chem_is_active
                                                 - ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver) ! remove same water at surface
                     endif
                  endif
-              end do
+               enddo !k loop
+               ! in case extreme values occured
+               if (abs(ptend%q(it,pver,1)) > abs(sum(ptend%q(it,:,n)))*1000.0_r8) then
+                   ptend%q(it,pver,1) = -sum(ptend%q(it,:,n))
+               endif
+               !if (ptend%q(it,pver,1) < -1.0e-5_r8 .and. sum(ptend%q(it,:,n)) > 1.0e-5_r8)then 
+               !    write(iulog,*) 'kzm_ptend_w_profile ', ptend%q(it,:,1)
+               !    write(iulog,*) 'kzm_ptend_f_profile ', ptend%q(it,:,n)
+               !endif
+  
           end do  
           ptend%q(:ncol,:,n) = 0.0_r8 ! remove the plume water tend; no plume water accumulation
       endif 

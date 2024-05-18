@@ -240,6 +240,14 @@ contains
                        'verticle velocity (m/s)' )
        call addfld( 't_end_e3sm_out', (/ 'lev' /), 'I',  'temperature', &
                        'verticle velocity (m/s)' )
+       call addfld( 'qv_ini_e3sm_out', (/ 'lev' /), 'I',  'kg/kg', &
+                       'verticle velocity (m/s)' )
+       call addfld( 'qv_end_e3sm_out', (/ 'lev' /), 'I',  'kg/kg', &
+                       'verticle velocity (m/s)' )
+       call addfld( 'r_ini_e3sm_out', (/ 'lev' /), 'I',  'm', &
+                       'verticle velocity (m/s)' )
+       call addfld( 'r_end_e3sm_out', (/ 'lev' /), 'I',  'm', &
+                       'verticle velocity (m/s)' )
     endif
     !---------------------------------------------------------------------
     if (masterproc) then
@@ -460,8 +468,11 @@ contains
     integer :: iyear,imo,iday_m,tod,tod_saved
     real(r8) :: wt_ini_e3sm_out(pcols,pver), wt_end_e3sm_out(pcols,pver), &
                 rbuoy_ini_e3sm_out(pcols,pver), rbuoy_end_e3sm_out(pcols,pver), &
-                t_ini_e3sm_out(pcols,pver), t_end_e3sm_out(pcols,pver)
+                t_ini_e3sm_out(pcols,pver), t_end_e3sm_out(pcols,pver),&
+                qv_ini_e3sm_out(pcols,pver), qv_end_e3sm_out(pcols,pver),&
+                r_ini_e3sm_out(pcols,pver), r_end_e3sm_out(pcols,pver)
     real(r8) :: air_density(pcols,pver) ! (kg/m3)
+    real(r8) :: qmass(pver),qratio(pver)
     real(r8) :: v_air, m_vapor, f_vapor
     logical :: surface_flux_flag = .false.
     !real(r8) :: detrainment_para = 0.5_r8 ! tunable parameter for detrainment fraction from surface plume
@@ -644,7 +655,9 @@ contains
                                  clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v, frp, burnedarea,frp4plume, &
                                  wt_ini_e3sm_out(icol,:), wt_end_e3sm_out(icol,:), &
                                  rbuoy_ini_e3sm_out(icol,:), rbuoy_end_e3sm_out(icol,:), &
-                                 t_ini_e3sm_out(icol,:), t_end_e3sm_out(icol,:),area(icol) )
+                                 t_ini_e3sm_out(icol,:), t_end_e3sm_out(icol,:),area(icol), &
+                                 qv_ini_e3sm_out(icol,:), qv_end_e3sm_out(icol,:),&
+                                 r_ini_e3sm_out(icol,:), r_end_e3sm_out(icol,:) )
                             plume_height = plume_height + zmidr(icol,pver)*1000.0_r8 ! plume height at middle of bottom layer
                             plume_height_EM(icol) = plume_height ! in meter
                             heat_flux_plume(icol) = frp4plume ! in kw/m2 
@@ -679,7 +692,20 @@ contains
                             if ((plume_height - zmidr(icol,k)*1000_r8) > 0._r8 .and. (plume_height - zmidr(icol,k-1)*1000_r8 < 0._r8)) then
                                ph_z(icol) = k
                             endif 
+                         enddo
+                         ! calculate mass flux
+                         qmass(:) = 0.0_r8 
+                         qratio(:) = 0.0_r8
+                         do k = ph_z(icol), pver-1
+                            qmass(k) = 3.1415_r8*(wt_end_e3sm_out(icol,k+1)*(r_end_e3sm_out(icol,k+1)**2) & 
+                                       *air_density(icol,k+1)*qv_end_e3sm_out(icol,k+1) &
+                                       - wt_end_e3sm_out(icol,k-1)*(r_end_e3sm_out(icol,k-1)**2) &
+                                       *air_density(icol,k-1)*qv_end_e3sm_out(icol,k-1))  
+                            qratio(k) = qmass(k) /  (3.1415_r8*(wt_end_e3sm_out(icol,pver)*(r_end_e3sm_out(icol,pver)**2) &
+                                       *air_density(icol,pver)*qv_end_e3sm_out(icol,pver)))
                          enddo 
+                         !qmass(pver) = 3.1415_r8*(wt_end_e3sm_out(icol,pver)*(r_end_e3sm_out(icol,pver)**2) &
+                         !              *air_density(icol,pver)*qv_end_e3sm_out(icol,pver))
                          if (forcings(m)%species == 'bc_a4' .and. diag_run_plumerise )then
                          write(iulog,*) 'fix_plume_height ', fix_plume_height 
                          write(iulog,*) 'kzm_fire_species ', forcings(m)%species, isec
@@ -692,6 +718,14 @@ contains
                          write(iulog,*)'kzm_plume_time ', iyear,imo,iday_m,tod
                          write(iulog,*)'kzm_plume_height ', plume_height, 'local time ',tl
                          write(iulog,*)'kzm_omega ', wt_ini_e3sm_out(icol,pver),wt_end_e3sm_out(icol,pver)
+                         write(iulog,*)'kzm_q_env ', qh2o(icol,pver), qh2o(icol,ph_z(icol))
+                         write(iulog,*)'kzm_qv ', qv_end_e3sm_out(icol,pver),qv_end_e3sm_out(icol,ph_z(icol))
+                         write(iulog,*)'kzm_r_ini_end ', r_ini_e3sm_out(icol,ph_z(icol)),r_end_e3sm_out(icol,ph_z(icol))
+                         write(iulog,*)'kzm_qmass ', qmass(:)
+                         write(iulog,*)'kzm_qratio ', qratio(:)
+                         write(iulog,*)'kzm_qratio_sum ', sum(qratio(:))
+                         write(iulog,*)'kzm_qratio_select ', qratio(pver-1), qratio(ph_z(icol)+1),qratio(ph_z(icol))
+                        
                          !write(iulog,*)'kzm_plume_FRP ', frp
                          !write(iulog,*)'kzm_plume environment data begin: zmidr pmid tfld relhum qh2o ufld vfld '
                          !do k = pver,50,-1
@@ -726,23 +760,20 @@ contains
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_oc_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
-                               elseif (forcings(m)%species == 'H2OFIRE'.and. forcings(m)%sectors(isec) == 'EM')then
+                               elseif (forcings(m)%species == 'H2OFIRE-NON'.and. forcings(m)%sectors(isec) == 'kEM')then
                                   frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
                                   frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_h2o_a4
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_H2O_fuel_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
                                   if (surface_flux_flag ) then ! water flux for plume-height 5 layers height 
-                                     ! v_air, m_vapor, f_vapor
-                                     !v_air = burnedarea_memory(icol)*wt_ini_e3sm_out(icol,pver) !(m3/s) The volume at the bottom per second
                                      v_air = burnedarea_memory(icol)*wt_end_e3sm_out(icol,pver) !(m3/s) The volume at the bottom per second
                                      m_vapor = v_air*air_density(icol,pver)*qh2o(icol,pver) ! The mass of water vapor (kg/s) 
                                      f_vapor = m_vapor/area(icol)*1000.0_r8/10000.0_r8 ! g/cm2/s 
                                      f_vapor = f_vapor/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) !g/cm3/s
                                      f_vapor = f_vapor/18.0_r8*avogadro !moleculer/cm3/s (H2O)  
-                                     !write(iulog,*) 'kzm_H2OFIRE_surf_flux_emis_at_layer ',  &
-                                     !      f_vapor/frcing_vertical_plume_new(k), burnedarea_memory(icol)/area(icol)
                                      frcing_vertical_plume_new(k) = frcing_vertical_plume_new(k) + f_vapor*detrainment_para  
+                                      
                                   endif
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_H2O_flux_emis_at_layer ', k, detrainment_para, frcing_vertical_plume_new(k)
@@ -762,7 +793,15 @@ contains
                                endif
                             else
                                frcing_vertical_plume_new(k) =  0.0_r8 
-                            endif                               
+                            endif 
+                            if (forcings(m)%species == 'H2OFIRE'.and. forcings(m)%sectors(isec) == 'EM')then
+                               frcing_vertical_plume_new(k) =  0.0_r8
+                               m_vapor = max(qmass(k),0.0_r8)
+                               f_vapor = m_vapor*1000.0_r8/10000.0_r8/area(icol) ! g/cm2/s
+                               f_vapor = f_vapor/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) !g/cm3/s
+                               f_vapor = f_vapor/18.0_r8*avogadro !moleculer/cm3/s (H2O)
+                               frcing_vertical_plume_new(k) = frcing_vertical_plume_new(k) + f_vapor
+                            endif                              
 
                             ! option: release emission evenly from plume top to surface 
                             !if (k >= ph_z(icol)) then
@@ -823,7 +862,10 @@ contains
          call outfld('t_end_e3sm_out', t_end_e3sm_out(:ncol,:), ncol, lchnk)
          call outfld('rbuoy_ini_e3sm_out', rbuoy_ini_e3sm_out(:ncol,:), ncol, lchnk)
          call outfld('rbuoy_end_e3sm_out', rbuoy_end_e3sm_out(:ncol,:), ncol, lchnk)
-
+         call outfld('qv_ini_e3sm_out', qv_ini_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('qv_end_e3sm_out', qv_end_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('r_ini_e3sm_out', r_ini_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('r_end_e3sm_out', r_end_e3sm_out(:ncol,:), ncol, lchnk)
        endif
 
   end subroutine extfrc_set
@@ -832,7 +874,9 @@ contains
   subroutine cal_plume_height( plume_height,zmidr_v, pmid_v, tfld_v, relhum_v, qh2o_v, &
                                ufld_v, vfld_v,lat,lon,tl,pt_v,frp,burnedarea,frp4plume,&
                                wt_ini_e3sm_col, wt_end_e3sm_col, rbuoy_ini_e3sm_col, rbuoy_end_e3sm_col,&
-                               t_ini_e3sm_col,t_end_e3sm_col,gridarea )
+                               t_ini_e3sm_col,t_end_e3sm_col,gridarea, &
+                               qv_ini_e3sm_col,qv_end_e3sm_col, &
+                               r_ini_e3sm_col,r_end_e3sm_col   )
     use smk_plumerise, only : smk_pr_driver  
     !use time_manager,  only: get_curr_date
     implicit none
@@ -850,7 +894,9 @@ contains
     real(r8), intent(out)  ::   frp4plume, tl
     real(r8), intent(out) ::  wt_ini_e3sm_col(pver), wt_end_e3sm_col(pver), & 
                               rbuoy_ini_e3sm_col(pver), rbuoy_end_e3sm_col(pver), &
-                              t_ini_e3sm_col(pver), t_end_e3sm_col(pver)
+                              t_ini_e3sm_col(pver), t_end_e3sm_col(pver), &
+                              qv_ini_e3sm_col(pver), qv_end_e3sm_col(pver), &
+                              r_ini_e3sm_col(pver), r_end_e3sm_col(pver) 
     ! local variables
     real(r8)  :: env(8, pver) ! meterology profiles for this column 
     real(r8)  :: gfed_area  ! fire parameters
@@ -860,6 +906,8 @@ contains
     real(r8) :: frp_peak,frp_h,frp_b,frp_sigma
     real(r8) :: wt_ini_e3sm(pver), wt_end_e3sm(pver), rbuoy_ini_e3sm(pver), rbuoy_end_e3sm(pver)
     real(r8) :: t_ini_e3sm(pver), t_end_e3sm(pver)
+    real(r8) :: qv_ini_e3sm(pver), qv_end_e3sm(pver)
+    real(r8) :: r_ini_e3sm(pver), r_end_e3sm(pver)
    ! get plume height
    ! env: geopotential height, pressure, temp(state%t), relative humidity(state%),
    ! env: potential T, specific humidity, U, V
@@ -910,14 +958,18 @@ contains
           gfed_area = burnedarea/10000.0_r8 !still use burned area from emission file  
        endif
        call smk_pr_driver(plume_height , env, gfed_area, frp4plume, lat, &
-            wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm )
+            wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm &
+            , qv_ini_e3sm, qv_end_e3sm, r_ini_e3sm, r_end_e3sm )
        wt_ini_e3sm_col(:) = wt_ini_e3sm(pver:1:-1)
        t_ini_e3sm_col(:) = t_ini_e3sm(pver:1:-1)
        wt_end_e3sm_col(:) = wt_end_e3sm(pver:1:-1)
        t_end_e3sm_col(:) = t_end_e3sm(pver:1:-1)
        rbuoy_ini_e3sm_col(:) = rbuoy_ini_e3sm(pver:1:-1)
        rbuoy_end_e3sm_col(:) = rbuoy_end_e3sm(pver:1:-1)
-
+       qv_ini_e3sm_col(:) = qv_ini_e3sm(pver:1:-1)
+       qv_end_e3sm_col(:) = qv_end_e3sm(pver:1:-1)
+       r_ini_e3sm_col(:) = r_ini_e3sm(pver:1:-1)
+       r_end_e3sm_col(:) = r_end_e3sm(pver:1:-1)
        !if(masterproc) write(iulog,*) 'plume_height ', plume_height
   end subroutine cal_plume_height
 !----------------------------------------------------------------------------------------
