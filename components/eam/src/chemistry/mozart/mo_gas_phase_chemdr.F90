@@ -241,7 +241,8 @@ contains
      endif
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
+         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' & !kzm
+         ) then
        if ( inv_ndx_cnst_o3 < 1 ) then
           call endrun('ERROR: chem_name = '//trim(chem_name)//&
           ' requies cnst_O3 fixed oxidant field. Use cnst_O3:O3 in namelist tracer_cnst_specifier')
@@ -904,10 +905,18 @@ contains
     !-----------------------------------------------------------------------
     !        ... Compute the extraneous frcing at time = t(n+1)
     !-----------------------------------------------------------------------      
+    !call setext( extfrc, zint, zintr, cldtop, &
+    !             zmid, lchnk, tfld, o2mmr, ommr, &
+    !             pmid, mbar, rlats, calday, ncol, rlons, pbuf )
     call setext( extfrc, zint, zintr, cldtop, &
                  zmid, lchnk, tfld, o2mmr, ommr, &
-                 pmid, mbar, rlats, calday, ncol, rlons, pbuf )
-
+                 pmid, mbar, rlats, calday, ncol, rlons, pbuf, &
+                 zmidr, relhum, qh2o, ufld, vfld) !      
+   ! zmidr, geopotential height relative to surface elevation 
+   ! pmid,tfld,already have 
+   ! relhum relative humidity
+   ! qh2o specific humidity kg/kg 
+   ! ufld, vfld, wind speeds 
     do m = 1,extcnt
        if( m /= synoz_ndx ) then
           do k = 1,pver

@@ -108,7 +108,8 @@ integer :: mode_strat_coarse_idx = -1
 integer :: strat_coarse_so4_idx = -1
 real(r8) :: sigmag_coarse, sigmag_strat_coarse
 real(r8) :: sigmag_aitken
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+!kzm
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
 
@@ -410,7 +411,8 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          end if
       end if
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+!kzm
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
@@ -539,7 +541,8 @@ subroutine nucleate_ice_cam_calc( &
 
    real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+!kzm
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
    real(r8), pointer :: coarse_mom(:,:) ! mass m.r. of coarse mom
 #endif
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -637,7 +640,8 @@ subroutine nucleate_ice_cam_calc( &
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_aer_mmr(0, mode_fine_dst_idx, fine_dust_idx, 'a', state, pbuf, fine_dust)
       end if
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_mom_idx, 'a', state, pbuf, coarse_mom)
 #endif
 
@@ -759,7 +763,7 @@ subroutine nucleate_ice_cam_calc( &
                   so4mc  = coarse_so4(i,k)*rho(i,k)
                endif
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
                mommc  = coarse_mom(i,k)*rho(i,k)
 #endif
 
@@ -777,10 +781,14 @@ subroutine nucleate_ice_cam_calc( &
                   else
                      ! 3-mode -- needs weighting for dust since dust and seasalt
                      !           are combined in the "coarse" mode type
+!kzm
 #if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
 #elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO)
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+#elif (defined MODAL_AERO_4MODE_BRC && defined RAIN_EVAP_TO_COARSE_AERO)
+                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+!kzm --
 #elif (defined MODAL_AERO_4MODE_MOM)
                      wght = dmc/(ssmc + dmc + so4mc + mommc)
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 

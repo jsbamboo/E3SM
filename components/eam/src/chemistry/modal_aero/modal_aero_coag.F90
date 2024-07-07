@@ -29,6 +29,8 @@
   integer, parameter, public :: pair_option_acoag = 3
 #elif (defined MODAL_AERO_5MODE)
   integer, parameter, public :: pair_option_acoag = 3
+#elif ( defined MODAL_AERO_4MODE_BRC )
+   integer, parameter, public :: pair_option_acoag = 3
 #elif ( defined MODAL_AERO_3MODE )
   integer, parameter, public :: pair_option_acoag = 1
 #endif

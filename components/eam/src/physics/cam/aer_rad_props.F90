@@ -23,7 +23,7 @@ use cam_history_support, only : fillvalue
 use ref_pres,     only: clim_modal_aero_top_lev
 
 use cam_abortutils,       only: endrun
-use tropopause,           only : tropopause_find
+use tropopause,           only : tropopause_find,tropopause_e90_3d
 use cam_logfile,          only: iulog
 
 implicit none
@@ -82,18 +82,19 @@ subroutine aer_rad_props_init()
    ! add full bands radiation output
    ! longwave: ext_sao_lw (pcols,pver,nlwbands)
    ! ext_sao_sw, ssa_sao, af_sao (pcols,pver,nswbands)
-   !if (is_output_interactive_volc) then
-   !call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')  
-   !call add_hist_coord('nswbands',    nswbands,    'NSWBANDS')   
-   !call addfld ('ext_sao_lw',(/ 'lev     ', 'nlwbands' /),    'A','1/m',&
-   !     'Aerosol LW radiation properties comparable to prescribed input ext_earth', flag_xyfill=.true.) 
-   !call addfld ('ext_sao_sw',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
-   !     'Aerosol SW radiation properties comparable to prescribed input ext_sun', flag_xyfill=.true.) 
-   !call addfld ('ssa_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
-   !     'Aerosol SW radiation properties comparable to prescribed input omega_sun', flag_xyfill=.true.) 
-   !call addfld ('af_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
-   !     'Aerosol SW radiation properties comparable to prescribed input g_sun', flag_xyfill=.true.) 
-   !endif
+   if (is_output_interactive_volc) then
+   call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')  !kzm
+   call add_hist_coord('nswbands',    nswbands,    'NSWBANDS')  !kzm 
+   call addfld ('ext_sao_lw',(/ 'lev', 'nlwbands' /),    'A','1/m',&
+        'Aerosol LW radiation properties comparable to prescribed input ext_earth', flag_xyfill=.true.) !kzm
+   call addfld ('ext_sao_sw',(/ 'lev', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input ext_sun', flag_xyfill=.true.) !kzm
+   call addfld ('ssa_sao',(/ 'lev', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input omega_sun', flag_xyfill=.true.) !kzm
+   call addfld ('af_sao',(/ 'lev', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input g_sun', flag_xyfill=.true.) !kzm
+   endif
+   !is_output_interactive_volc = .true. !kzm
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
    ! number of bulk aerosols in climate list
@@ -139,7 +140,7 @@ end subroutine aer_rad_props_init
 
 subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6_volc, &
                             tau, tau_w, tau_w_g, tau_w_f, clear_rh)
-
+   use mo_chem_utls,        only : get_spc_ndx
    ! Return bulk layer tau, omega, g, f for all spectral intervals.
 
    ! Arguments
@@ -219,6 +220,15 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    !real(r8) :: ssa_sao   (pcols,0:pver,nswbands) !
    !real(r8) :: af_sao    (pcols,0:pver,nswbands) !
    !endif
+   real(r8) :: ext_sao_sw(pcols,0:pver,nswbands) !
+   real(r8) :: ssa_sao   (pcols,0:pver,nswbands) !
+   real(r8) :: af_sao    (pcols,0:pver,nswbands) !
+   ! for 3D Strat. Burden
+   integer :: e90_ndx
+   integer  :: tmp_tropLev(pcols)
+   logical  :: tropFlag(pcols,pver)      ! 3D tropospheric level flag
+   real(r8) :: tropFlagInt(pcols,pver)   ! 3D tropospheric level flag integer, troposphere 1, others 0
+   real(r8) :: tropP(pcols)              ! lowest tropopause pressure (Pa) from E90
    !-----------------------------------------------------------------------------
 
    ncol  = state%ncol
@@ -266,6 +276,13 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
          call endrun('aer_rad_props.F90: subr aer_rad_props_sw: tropopause not found')
    endif
 
+   ! get 3D trop level from E90 method
+   e90_ndx = get_spc_ndx('E90')
+   if (e90_ndx > 0) then
+      call tropopause_e90_3d(state, tmp_tropLev, trop_level, tropFlag, tropFlagInt,tropP=tropP)
+   endif
+   !----------------------------------
+   !    
    if (is_cmip6_volc) then
       !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m
@@ -292,8 +309,13 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw_inv_m(:,:,idx_sw_diag), &
-           trop_level, tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
+      if (e90_ndx > 0) then
+         call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw_inv_m(:,:,idx_sw_diag), &
+               trop_level, tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh, tropFlag=tropFlag)
+      else           
+         call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw_inv_m(:,:,idx_sw_diag), &
+               trop_level, tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
+      end if 
    else
       tau    (1:ncol,:,:) = 0._r8
       tau_w  (1:ncol,:,:) = 0._r8
@@ -315,6 +337,16 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
      !call outfld('af_sao',af_sao(:,:,:), pcols, lchnk)
 
    !endif
+   !kzm ++
+   if (is_output_interactive_volc) then
+     !prepare strat. aerosol sw optic properties for output: ext_sao_sw, ssa_sao, af_sao
+     call get_strat_aer_optics_sw(state, pbuf, trop_level, tau, tau_w, tau_w_g, tau_w_f, ext_sao_sw, ssa_sao, af_sao)
+     call outfld('ext_sao_sw',ext_sao_sw(:,:,:), pcols, lchnk)
+     call outfld('ssa_sao',ssa_sao(:,:,:), pcols, lchnk)
+     call outfld('af_sao',af_sao(:,:,:), pcols, lchnk)
+
+   endif
+   !kzm -- 
    ! Contributions from bulk aerosols.
    do iaerosol = 1, numaerosols
 
@@ -542,6 +574,19 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
    !  enddo    
    !  call outfld('ext_sao_lw',ext_sao_lw(:,:,:), pcols, lchnk)
    !endif
+   !kzm ++
+   if (is_output_interactive_volc) then
+     ext_sao_lw(:,:,:) = 0.0_r8
+     !prepare strat. aerosol sw optic properties for output: 
+     do ipver = 1 , pver
+         do icol = 1, ncol
+            lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
+            ext_sao_lw(icol,ipver,:) = odap_aer(icol,ipver,:)/lyr_thk ! unit m
+         enddo
+     enddo    
+     call outfld('ext_sao_lw',ext_sao_lw(:,:,:), pcols, lchnk)
+   endif
+   !kzm --
    ! Loop over bulk aerosols in list.
    do iaerosol = 1, numaerosols
 

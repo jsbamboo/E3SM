@@ -1835,7 +1835,6 @@ contains
                elseif (flag(6:10) == '_trop') then
                !this change is to let code not got to flag(6:8) when length is 5
                !to avoid debug built issue
-
                    wrk_sum(:ncol) = 0.0_r8
                if (history_chemdyg_summary) then
                    if (trim(solsym(m)) == 'O3') then
