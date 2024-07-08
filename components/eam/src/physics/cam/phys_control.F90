@@ -541,7 +541,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         is_output_interactive_volc_out,&        
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_gaschmbudget_num_out,  &
-                        is_output_interactive_volc_out, emis_constrained_frp_out,diag_run_plumerise_out, plumerise_out, &
+                        emis_constrained_frp_out,diag_run_plumerise_out, plumerise_out, &
                         fix_plume_height_out, detrainment_para_out, &
                         history_budget_out, history_gaschmbudget_out, history_gaschmbudget_2D_out, history_gaschmbudget_2D_levels_out, &
                         gaschmbudget_2D_L1_s_out, gaschmbudget_2D_L1_e_out, gaschmbudget_2D_L2_s_out, gaschmbudget_2D_L2_e_out, &

@@ -53,6 +53,8 @@ module mo_extfrc
   logical :: plumerise = .false.
   logical :: emis_constrained_frp = .false.
   logical :: diag_run_plumerise = .false.
+  logical  :: history_gaschmbudget_2D = .false.
+  logical  :: history_chemdyg_summary = .false.
   real(r8) :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
   real(r8) :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
   real(r8) :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)*(12.0_r8/18.0_r8) ! adjust moleculer weight from carbon to h2o
@@ -110,14 +112,14 @@ contains
     logical  :: history_aerosol      ! Output the MAM aerosol tendencies
     logical  :: history_verbose      ! produce verbose history output
 ! chem diags
-    logical  :: history_gaschmbudget_2D
-    logical  :: history_chemdyg_summary
+!    logical  :: history_gaschmbudget_2D
+!    logical  :: history_chemdyg_summary
     !-----------------------------------------------------------------------
  
     call phys_getopts( history_aerosol_out        = history_aerosol, &
                        history_verbose_out        = history_verbose, &
                        history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
-                       history_chemdyg_summary_out = history_chemdyg_summary   )
+                       history_chemdyg_summary_out = history_chemdyg_summary, &  
                        emis_constrained_frp_out   = emis_constrained_frp, &
                        diag_run_plumerise_out   = diag_run_plumerise, &
                        plumerise_out              = plumerise, &
@@ -425,7 +427,7 @@ contains
  ! subroutine extfrc_set( lchnk, zint, frcing, ncol )
   subroutine extfrc_set( lchnk, zint, frcing, ncol, &
                          zmidr, pmid, tfld, relhum, qh2o, ufld, vfld )
-   
+  use phys_control,  only : phys_getopts 
     !--------------------------------------------------------
     !	... form the external forcing
     !--------------------------------------------------------
@@ -482,7 +484,7 @@ contains
     !real(r8) :: detrainment_para = 0.5_r8 ! tunable parameter for detrainment fraction from surface plume
     !kzm ++ surface air flux
     !mass(:ncol,:)        = state%pdeldry(:ncol,:)*rga
-    call phys_getopts(history_gaschmbudget_2D_out = history_gaschmbudget_2D,&
+    call phys_getopts(history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
                       history_chemdyg_summary_out = history_chemdyg_summary   )
     if (detrainment_para > 0.0_r8) then
        surface_flux_flag = .true.
