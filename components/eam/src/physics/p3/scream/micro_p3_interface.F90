@@ -561,6 +561,8 @@ end subroutine micro_p3_readnl
    call addfld('vap_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from frozen phase')
    call addfld('liq_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
    call addfld('cond_from_macro',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
+   call addfld('cond_from_macro_p',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
+
    call addfld ('I_VAP_COND_EXCHANGE', horiz_only,    'A', 'kg/m2/s', 'Vertically-integrated all phase condensation rate'             )
 
    !HYMA add radar reflectivity as output
@@ -800,6 +802,7 @@ end subroutine micro_p3_readnl
     real(rtype), dimension(pcols,pver) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
     real(rtype), dimension(pcols,pver) :: cond_from_macro ! sum of vap-ice phase change tendenices
+    real(rtype), dimension(pcols,pver) :: cond_from_macro_p ! sum of vap-ice phase change tendenices
 
     real(rtype) :: dummy_out(pcols,pver)    ! dummy_output variable for p3_main to replace unused variables.
 
@@ -1104,6 +1107,7 @@ end subroutine micro_p3_readnl
     snow_pcw = 0.0_rtype
     vap_liq_exchange = 0.0_rtype
     cond_from_macro = 0.0_rtype
+    cond_from_macro_p = 0.0_rtype
 
     call t_startf('micro_p3_tend_loop')
     call p3_main( &
@@ -1258,6 +1262,9 @@ end subroutine micro_p3_readnl
     ! Add cmeliq to  vap_liq_exchange
     vap_liq_exchange(:ncol,top_lev:pver) = vap_liq_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver)
     cond_from_macro(:ncol,top_lev:pver) =  cmeliq(:ncol,top_lev:pver)
+    where (cond_from_macro(:ncol,top_lev:pver) > 0.0_rtype)
+      cond_from_macro_p(:ncol,top_lev:pver) = cond_from_macro(:ncol,top_lev:pver)
+   end where
 
 !====================== Export variables/Conservation START ======================!
      !For precip, accumulate only total precip in prec_pcw and snow_pcw variables.
@@ -1505,6 +1512,7 @@ end subroutine micro_p3_readnl
    call outfld('vap_liq_exchange',      vap_liq_exchange,      pcols, lchnk)
    call outfld('liq_ice_exchange',      liq_ice_exchange,      pcols, lchnk)
    call outfld('cond_from_macro',      cond_from_macro,      pcols, lchnk)
+   call outfld('cond_from_macro_p',      cond_from_macro_p,      pcols, lchnk)
 
    call outfld('I_VAP_COND_EXCHANGE',      I_VAP_COND_EXCHANGE,      pcols,    lchnk)
 
