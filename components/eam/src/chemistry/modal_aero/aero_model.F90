@@ -884,6 +884,7 @@ contains
     index_tot_mass(1,5) = get_spc_ndx('dst_a1')
     index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
     index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_tot_mass(1,8) = get_spc_ndx('brc_a1')
     index_chm_mass(1,1) = get_spc_ndx('so4_a1')
     index_chm_mass(1,2) = get_spc_ndx('soa_a1')
     index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
@@ -908,11 +909,16 @@ contains
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
     index_tot_mass(4,2) = get_spc_ndx('bc_a4')
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_tot_mass(4,4) = get_spc_ndx('brc_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a4' ) ! previous model use bc_a1, should be a typo
     !
     ! strat_coarse
     index_tot_mass(5,1) = get_spc_ndx('so4_a5')
+    index_tot_mass(5,2) = get_spc_ndx('bc_a5')
+    index_tot_mass(5,3) = get_spc_ndx('brc_a5')
+    index_tot_mass(5,4) = get_spc_ndx('pom_a5')
     index_chm_mass(5,1) = get_spc_ndx('so4_a5')
+    index_chm_mass(5,2) = get_spc_ndx('bc_a5')
     
 #elif ( defined MODAL_AERO_7MODE )
     !

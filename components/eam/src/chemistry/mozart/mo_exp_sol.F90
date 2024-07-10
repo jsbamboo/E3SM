@@ -133,6 +133,21 @@ contains
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
           end do
+        elseif (trim(solsym(l)) == 'brc_a4' .or. trim(solsym(l)) == 'brc_a1' .or. trim(solsym(l)) == 'brc_a3') then
+               ! V2-like explicit equation
+          do i = 1,ncol
+             do k = 1,ltrop(i)
+             ! above tropopause, emission only
+                chem_loss(i,k,l) = 0.0_r8
+                chem_prod(i,k,l) = ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * ind_prd(i,k,m)
+             end do
+             do k = ltrop(i)+1,pver ! brown carbon oxidation to form pom only in troposphere
+                chem_loss(i,k,l) = -loss(i,k,m)
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+         end do
 #elif ( defined MODAL_AERO_4MODE_BRC )
        elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
          ! V2-like explicit equation is used to solve H2SO4 and SO2 due to dead zero values

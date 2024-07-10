@@ -97,12 +97,12 @@
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
 !kzm++  
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S )
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 !kzm ++
-#elif ( defined MODAL_AERO_4MODE_BRC )
+#elif ( defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 1  ! add one for BRC 
@@ -5750,13 +5750,13 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
 #endif
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+#if ( defined MODAL_AERO_4MODE_MOM )
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
 #endif
 !kzm ++
-#if ( defined MODAL_AERO_4MODE_BRC )
+#if ( defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
       naer = naer + 1   
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer

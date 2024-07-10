@@ -1355,7 +1355,7 @@ contains
 #ifdef MODAL_AERO
           if (history_aerosol) then
              select case (trim(solsym(m)))
-             case ('bc_a1','bc_a3','bc_a4')
+             case ('bc_a1','bc_a3','bc_a4', 'bc_a5')
                   mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
              case ('dst_a1','dst_a3')
                   mass_dst(:ncol,:) = mass_dst(:ncol,:) + mmr(:ncol,:,m)
@@ -1363,7 +1363,7 @@ contains
                   mass_mom(:ncol,:) = mass_mom(:ncol,:) + mmr(:ncol,:,m)
              case ('ncl_a1','ncl_a2','ncl_a3')
                   mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + mmr(:ncol,:,m)
-             case ('pom_a1','pom_a3','pom_a4')
+             case ('pom_a1','pom_a3','pom_a4','pom_a5')
                   mass_pom(:ncol,:) = mass_pom(:ncol,:) + mmr(:ncol,:,m)
 #if (defined MODAL_AERO_5MODE)
              case ('so4_a1','so4_a2','so4_a3','so4_a5')
@@ -1430,7 +1430,7 @@ contains
           fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
           if(associated(fldcw)) then
              select case (trim(cnst_name_cw(n)))
-                case ('bc_c1','bc_c3','bc_c4')
+                case ('bc_c1','bc_c3','bc_c4','bc_a5')
                      mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
                 case ('dst_c1','dst_c3')
                      mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
@@ -1438,7 +1438,7 @@ contains
                      mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
                 case ('ncl_c1','ncl_c2','ncl_c3')
                      mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
-                case ('pom_c1','pom_c3','pom_c4')
+                case ('pom_c1','pom_c3','pom_c4','pom_a5')
                      mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
 #if (defined MODAL_AERO_5MODE)
                 case ('so4_c1','so4_c2','so4_c3','so4_c5')

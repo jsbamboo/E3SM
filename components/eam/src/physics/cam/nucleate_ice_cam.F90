@@ -117,6 +117,7 @@ integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 integer :: coarse_bc_idx = -1  ! index of bc in coarse mode
 integer :: coarse_pom_idx = -1  ! index of pom in coarse mode
 integer :: coarse_soa_idx = -1  ! index of soa in coarse mode
+integer :: coarse_brc_idx = -1  ! index of brc in coarse mode
 #endif
 
 integer :: mode_fine_dst_idx = -1   ! index of dust in fine dust mode
@@ -440,6 +441,14 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          end select
       end do
 
+      do n = 1, nspec
+         call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
+         select case (trim(str32))
+         case ('b-organic')
+            coarse_brc_idx = n
+         end select
+      end do
+
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
@@ -547,6 +556,7 @@ subroutine nucleate_ice_cam_calc( &
 #endif
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
    real(r8), pointer :: coarse_bc(:,:) ! mass m.r. of coarse bc
+   real(r8), pointer :: coarse_brc(:,:) ! mass m.r. of coarse bc
    real(r8), pointer :: coarse_pom(:,:) ! mass m.r. of coarse pom
    real(r8), pointer :: coarse_soa(:,:) ! mass m.r. of coarse soa 
 #endif
@@ -580,6 +590,7 @@ subroutine nucleate_ice_cam_calc( &
    real(r8) :: so4mc
    real(r8) :: mommc
    real(r8) :: bcmc
+   real(r8) :: brcmc
    real(r8) :: pommc
    real(r8) :: soamc
 
@@ -647,6 +658,9 @@ subroutine nucleate_ice_cam_calc( &
 
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_bc_idx, 'a', state, pbuf, coarse_bc)
+      if (coarse_brc_idx >0 ) then  
+           call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_brc_idx, 'a', state, pbuf, coarse_brc)
+      endif
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_pom_idx, 'a', state, pbuf, coarse_pom)
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_soa_idx, 'a', state, pbuf, coarse_soa)
 #endif
@@ -769,6 +783,9 @@ subroutine nucleate_ice_cam_calc( &
 
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
                bcmc  = coarse_bc(i,k)*rho(i,k)
+               if (coarse_brc_idx > 0) then
+                  brcmc  = coarse_brc(i,k)*rho(i,k)
+               endif
                pommc  = coarse_pom(i,k)*rho(i,k)
                soamc  = coarse_soa(i,k)*rho(i,k)
 #endif
@@ -785,9 +802,13 @@ subroutine nucleate_ice_cam_calc( &
 #if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
 #elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO)
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+                     if (coarse_brc_idx > 0) then
+                        wght = dmc/(ssmc + dmc + so4mc + bcmc + brcmc + pommc + soamc + mommc)
+                     else
+                        wght = dmc/(ssmc + dmc + so4mc + brcmc + pommc + soamc + mommc)
+                     end if
 #elif (defined MODAL_AERO_4MODE_BRC && defined RAIN_EVAP_TO_COARSE_AERO)
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+                     wght = dmc/(ssmc + dmc + so4mc + bcmc + brcmc + pommc + soamc + mommc)
 !kzm --
 #elif (defined MODAL_AERO_4MODE_MOM)
                      wght = dmc/(ssmc + dmc + so4mc + mommc)

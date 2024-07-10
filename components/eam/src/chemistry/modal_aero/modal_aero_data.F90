@@ -51,13 +51,19 @@
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', &
        'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+#elif ( defined MODAL_AERO_4MODE_MOM )
   integer, parameter ::  ntot_aspectype = 9
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', &
        'm-organic ' /)
 !kzm ++
+#elif ( defined MODAL_AERO_5MODE)
+  integer, parameter ::  ntot_aspectype = 10
+  character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
+       'p-organic ', 'b-organic ','s-organic ', 'black-c   ', &
+       'seasalt   ', 'dust      ', &
+       'm-organic ' /)
 #elif ( defined MODAL_AERO_4MODE_BRC )
   integer, parameter ::  ntot_aspectype = 10
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate', 'ammonium  ', 'nitrate   ', &
@@ -84,13 +90,17 @@
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8, 66528.0_r8,  284.0_r8 /)
 !kzm ++
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S )
 !kzm --
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8 /)
 !kzm ++
 ! set BRC at 5th, as carbon
+#elif ( defined MODAL_AERO_5MODE )
+    real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
+       12.0_r8,   12.0_r8,  12.0_r8, 12.0_r8,  58.5_r8, 135.0_r8, &
+       250092.0_r8  /)
 #elif ( defined MODAL_AERO_4MODE_BRC )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,  12.0_r8, 12.0_r8,  58.5_r8, 135.0_r8, &
@@ -159,9 +169,9 @@
 #endif
 #elif ( defined MODAL_AERO_5MODE )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3, 1 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 8, 4, 8, 4, 4 /)
 #else
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3, 1 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 8, 4, 3, 4, 4 /)
 #endif
 
 #elif ( defined MODAL_AERO_4MODE_BRC )

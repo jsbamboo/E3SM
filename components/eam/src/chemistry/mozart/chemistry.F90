@@ -251,7 +251,8 @@ end function chem_is
     h2ofire_ndx   = get_spc_ndx('H2OFIRE')  !kzm
     brc_a4_ndx = get_spc_ndx('brc_a4')  !kzm 
     write(iulog,*)'kzm_h2ofire_ndx ', h2ofire_ndx
-    write(iulog,*)'kzm_h2o_ndx ', h2o_ndx
+    write(iulog,*)'kzm_h2ofire_ndx ', h2ofire_ndx
+    write(iulog,*)'kzm_brc_a4_ndx ', brc_a4_ndx
     o2p_ndx   = get_spc_ndx('O2p')
 
     cly_ndx   = get_spc_ndx('CLY')
