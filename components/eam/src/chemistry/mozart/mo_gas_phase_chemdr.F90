@@ -4,6 +4,7 @@ module mo_gas_phase_chemdr
   use shr_const_mod,    only : pi => shr_const_pi
   use constituents,     only : pcnst
   use cam_history,      only : fieldname_len
+  use modal_aero_data,  only : ntot_amode
   use chem_mods,        only : phtcnt, rxntot, gas_pcnst
   use chem_mods,        only : rxt_tag_cnt, rxt_tag_lst, rxt_tag_map, extcnt
   use dust_model,       only : dust_names, ndust => dust_nbin
@@ -20,7 +21,6 @@ module mo_gas_phase_chemdr
   public :: gas_phase_chemdr, gas_phase_chemdr_inti 
   public :: map2chm
   public :: gas_ac_name, gas_ac_name_2D
-
   integer :: map2chm(pcnst) = 0           ! index map to/from chemistry/constituents list
   character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
   character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
@@ -43,7 +43,7 @@ module mo_gas_phase_chemdr
   integer :: h2_ndx, ch4_ndx, c2h4_ndx, isop_ndx, oh_ndx, mvkmacr_ndx
   integer :: no2_ndx, no3_ndx, n2o5_ndx
   integer :: lo3_no_ndx, lo3_no2_ndx 
-
+  integer, dimension(ntot_amode) :: pom_idx = -1, brc_idx = -1 ! for pom_o3 reaction
   character(len=fieldname_len),dimension(rxntot-phtcnt) :: rxn_names
   character(len=fieldname_len),dimension(phtcnt)        :: pht_names
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
@@ -74,11 +74,12 @@ contains
     character(len=3)  :: string
     integer           :: n, m
     logical           :: history_aerosol      ! Output the MAM aerosol tendencies
-
+    logical           :: pom_o3_rxt_strat
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
-         convproc_do_aer_out = convproc_do_aer ) 
+         convproc_do_aer_out = convproc_do_aer, &
+         pom_o3_rxt_strat_out = pom_o3_rxt_strat ) 
 
     so2_ndx = get_spc_ndx('SO2')
     dms_ndx = get_spc_ndx('DMS')
@@ -248,8 +249,10 @@ contains
           ' requies cnst_O3 fixed oxidant field. Use cnst_O3:O3 in namelist tracer_cnst_specifier')
        end if
      end if
-
-
+     ! initial for pom_o3 reaction rate ! kzm
+     if (pom_o3_rxt_strat) then
+        call pom_ozone_reaction_ini()
+     end if
   end subroutine gas_phase_chemdr_inti
 
 
@@ -509,7 +512,7 @@ contains
     logical :: history_UCIgaschmbudget_2D
     logical :: history_UCIgaschmbudget_2D_levels
     logical :: history_chemdyg_summary
-
+    logical :: pom_o3_rxt_strat
     integer ::  gas_ac_idx
     real(r8), pointer, dimension(:) :: gas_ac_2D
     real(r8), pointer, dimension(:,:) :: gas_ac
@@ -522,7 +525,8 @@ contains
              history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels,&
                  history_UCIgaschmbudget_2D_out = history_UCIgaschmbudget_2D, &
           history_UCIgaschmbudget_2D_levels_out = history_UCIgaschmbudget_2D_levels, &
-                    history_chemdyg_summary_out = history_chemdyg_summary)
+                    history_chemdyg_summary_out = history_chemdyg_summary, &
+                    pom_o3_rxt_strat_out = pom_o3_rxt_strat ) 
 
     call t_startf('chemdr_init')
 
@@ -1829,6 +1833,13 @@ contains
        mmr_tend(:ncol,:,m) = (mmr_tend(:ncol,:,m) - mmr(:ncol,:,m))*delt_inverse
     enddo
 
+
+    ! if considering pom_o3 reaction
+    if (pom_o3_rxt_strat) then
+       call pom_ozone_reaction_dr(pbuf, mmr(:ncol,:,:),  vmr, invariants, pmid(:ncol,:), tfld(:ncol,:), troplev(:ncol), delt, mmr_tend, mmr_new)
+    endif
+
+
     do m = 1,pcnst
        n = map2chm(m)
        if( n > 0 ) then
@@ -1864,5 +1875,122 @@ contains
 
   end subroutine comp_exp
 
+!------------------------------------------------
+  subroutine pom_ozone_reaction_ini
+    use aero_model, only: index_tot_mass,num_idx,dgnumwet_idx
+    use modal_aero_data,only: ntot_amode
+    use mo_chem_utls,      only : get_spc_ndx
+    implicit none
+    integer, dimension(ntot_amode) :: pom_idx = -1, brc_idx = -1 
+#if ((defined MODAL_AERO_5MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_4MODE_BRC) )
+    pom_idx(1) = get_spc_ndx('pom_a1')    
+    pom_idx(3) = get_spc_ndx('pom_a3')    
+    pom_idx(4) = get_spc_ndx('pom_a4')    
+#endif
 
+#if ((defined MODAL_AERO_5MODE) || (defined MODAL_AERO_4MODE_BRC) )
+    brc_idx(1) = get_spc_ndx('brc_a1')
+    brc_idx(3) = get_spc_ndx('brc_a3')
+    brc_idx(4) = get_spc_ndx('brc_a4')
+#endif
+
+#if (defined MODAL_AERO_5MODE)
+    pom_idx(5) = get_spc_ndx('pom_a5')
+    brc_idx(5) = get_spc_ndx('brc_a5')
+#endif
+  
+
+  end subroutine pom_ozone_reaction_ini
+!-------------------------------------------------
+  subroutine pom_ozone_reaction_dr(pbuf, mmr,vmr, invariants,pmid,temp,troplev,delt, mmr_tend,mmr_new)
+    use aero_model, only: index_tot_mass,num_idx,dgnumwet_idx
+    use modal_aero_data, only : nspec_amode, alnsg_amode,ntot_amode
+    use mo_constants,      only : avo => avogadro, boltz_cgs, rgas
+    use physics_buffer,    only : physics_buffer_desc,pbuf_get_field
+    use mo_chem_utls,      only : get_spc_ndx
+    use chem_mods,         only : nabscol, nfs, indexm   
+
+    implicit none
+    real(r8), intent(in)  :: mmr(pcols,pver,gas_pcnst) ! chem working concentrations (kg/kg)
+    real(r8), intent(in)  :: vmr(pcols,pver,gas_pcnst) ! ! xported species (vmr)
+    real(r8), intent(in)  :: invariants(pcols,pver,nfs) ! 
+    real(r8), intent(in)  :: pmid(pcols,pver) ! 
+    real(r8), intent(in)  :: temp(pcols,pver) ! 
+    integer,  intent(in)  :: troplev(pcols)
+    real(r8), intent(in)  :: delt
+    !integer,  intent(in)  :: endlev(:)
+    real(r8), intent(inout) :: mmr_tend(pcols,pver,gas_pcnst)     ! chemistry species tendencies (kg/kg/s)
+    real(r8), intent(inout) :: mmr_new(pcols,pver,gas_pcnst)      ! chem working concentrations (kg/kg)
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    ! local vars
+    real(r8), pointer, dimension(:,:,:) :: dgnumwet
+    integer  :: i,k,l,m
+    real(r8), parameter :: MWoxid = 0.048_r8 ! kg/mol
+    real(r8), parameter :: MWpom = 0.028_r8 ! kg/mol
+    real(r8), parameter :: gamma_O3 = 1.e-5_r8
+    real(r8) :: sad_pom(pcols,pver,ntot_amode), dmdt_pom(pcols,pver,ntot_amode)
+    real(r8) :: sad_brc(pcols,pver,ntot_amode), dmdt_brc(pcols,pver,ntot_amode)
+    real(r8) :: rho_air,tot_mass,chm_mass
+    real(r8) :: vth(pcols,pver),ni(pcols,pver),Fi(pcols,pver,ntot_amode)
+    !dgnumwet_idx   = pbuf_get_index('DGNUMWET')
+    sad_pom(:,:,:) = 0._r8
+    sad_brc(:,:,:) = 0._r8
+    dmdt_pom(:,:,:) = 0._r8
+    dmdt_brc(:,:,:) = 0._r8
+    call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet )
+    do i = 1, pcols
+       do k = 1, troplev(i)
+          do l= 1, ntot_amode
+             rho_air = pmid(i,k)/(temp(i,k)*287.04_r8)
+             tot_mass = 0._r8
+             chm_mass = 0._r8
+             sad_pom(i,k,l) = 0._r8
+             sad_brc(i,k,l) = 0._r8
+             dmdt_pom(i,k,l) = 0._r8
+             dmdt_brc(i,k,l) = 0._r8
+             do m=1, nspec_amode(l)
+                if (index_tot_mass(l,m) > 0 ) &
+                   tot_mass = tot_mass + mmr(i,k,index_tot_mass(l,m))  
+             end do
+             if ( (tot_mass > 0._r8) .and. pom_idx(l) > 0._r8) then
+                ! reaction rate over pom
+                chm_mass = mmr(i,k,pom_idx(l))
+                sad_pom(i,k,l) = chm_mass/tot_mass &
+                                 * mmr(i,k,num_idx(l))*rho_air*pi*dgnumwet(i,k,l)**2._r8 &
+                                 * exp(2._r8*alnsg_amode(l)**2._r8)  ! m^2/m^3
+                sad_pom(i,k,l) = 1.e-2_r8 * sad_pom(i,k,l) ! cm^2/cm^3
+                vth(i,k) = sqrt((8._r8*boltz_cgs*1.e-7_r8*temp(i,k)*avo) / (pi*MWoxid)) !(cm/sec)
+                ni(i,k) = vmr(i,k,o3lnz_ndx) * invariants(i,k,indexm)  !molec/molec * molec/cm3 -> molec/cm3 ! ozone from lnz
+                Fi(i,k,l) = sad_pom(i,k,l) * ni(i,k) * gamma_O3 * vth(i,k) / 4._r8 ! molec/cm3/sec
+                dmdt_pom(i,k,l) = -Fi(i,k,l) * MWpom /avo *1.e6_r8 /rho_air  !kg/kg/sec
+             end if    
+             if ( (tot_mass > 0._r8) .and. brc_idx(l) > 0._r8) then
+                ! reaction rate over brc
+                chm_mass = mmr(i,k,brc_idx(l))
+                sad_brc(i,k,l) = chm_mass/tot_mass &
+                                 * mmr(i,k,num_idx(l))*rho_air*pi*dgnumwet(i,k,l)**2._r8 &
+                                 * exp(2._r8*alnsg_amode(l)**2._r8)  ! m^2/m^3
+                sad_brc(i,k,l) = 1.e-2_r8 * sad_brc(i,k,l) ! cm^2/cm^3
+                vth(i,k) = sqrt((8._r8*boltz_cgs*1.e-7_r8*temp(i,k)*avo) / (pi*MWoxid)) !(cm/sec)
+                ni(i,k) = vmr(i,k,o3lnz_ndx) * invariants(i,k,indexm)  !molec/molec * molec/cm3 -> molec/cm3 ! ozone from lnz
+                Fi(i,k,l) = sad_brc(i,k,l) * ni(i,k) * gamma_O3 * vth(i,k) / 4._r8 ! molec/cm3/sec
+                dmdt_brc(i,k,l) = -Fi(i,k,l) * MWpom /avo *1.e6_r8 /rho_air  !kg/kg/sec
+                
+             end if
+             
+           end do ! end mode loop
+        end do ! k-lev loop
+      end do ! i-ncol loop
+      do l = 1, ntot_amode
+         if (pom_idx(l) > 0) then
+            mmr_tend(:,:,pom_idx(l)) = mmr_tend(:,:,pom_idx(l)) + dmdt_pom(:,:,l)  !kg/kg/sec
+            mmr_new(:,:,pom_idx(l)) = mmr(:,:,pom_idx(l)) + mmr_tend(:,:,pom_idx(l))*delt !kg/kg
+         endif
+         if (brc_idx(l) > 0) then
+            mmr_tend(:,:,brc_idx(l)) = mmr_tend(:,:,brc_idx(l)) + dmdt_brc(:,:,l)  !kg/kg/sec
+            mmr_new(:,:,brc_idx(l)) = mmr(:,:,brc_idx(l)) + mmr_tend(:,:,brc_idx(l))*delt !kg/kg
+         endif
+      end do
+  end subroutine pom_ozone_reaction_dr
+!------------------------------------------------
 end module mo_gas_phase_chemdr

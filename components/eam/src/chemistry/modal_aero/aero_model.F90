@@ -44,7 +44,7 @@ module aero_model
   public :: nimptblgrow_maxd
   public :: scavimptblnum
   public :: scavimptblvol
-
+  public :: index_tot_mass,num_idx,dgnumwet_idx
  ! Misc private data 
 
   ! number of modes

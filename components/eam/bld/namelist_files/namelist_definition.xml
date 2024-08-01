@@ -3762,6 +3762,12 @@ Switch for gas chemistry tracers in the ChemDyg package
 Default: .false.
 </entry>
 
+<entry id="pom_o3_rxt_strat" type="logical"  category="radiation"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers in the ChemDyg package
+Default: .false.
+</entry>
+
 <entry id="history_waccm" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output used primarily for WACCM runs.

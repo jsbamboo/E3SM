@@ -105,6 +105,7 @@ module physpkg
   logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
   logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
   logical :: history_chemdyg_summary
+  logical :: pom_o3_rxt_strat
 
   !======================================================================= 
 contains
@@ -188,7 +189,8 @@ subroutine phys_register
                       history_gaschmbudget_out = history_gaschmbudget, &
                    history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
             history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
-                   history_chemdyg_summary_out = history_chemdyg_summary )
+                   history_chemdyg_summary_out = history_chemdyg_summary, &
+                          pom_o3_rxt_strat_out = pom_o3_rxt_strat )
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
