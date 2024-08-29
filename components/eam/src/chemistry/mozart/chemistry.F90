@@ -1768,7 +1768,7 @@ end function chem_is_active
           ptend%lq(1) = .true.
           do it = 1,pcols
               ptend%q(it,:,1) = 0.0_r8 ! no q tend from other chemistry processes
-              do k = 1,pver+1 ! not the surface layer
+              do k = 1,pver-2 ! not the surface layer
                  ! find the locations has positive plume water tend
                  ! add plume water tendency to q
                  ! remove same tendency to q at surface
@@ -1779,12 +1779,15 @@ end function chem_is_active
                  ! in the code, it should be:
                  ! del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k) = del(ptend%q(:ncol,pver,1))*state%pdel(:ncol,pver)
                  ! del(ptend%q(:ncol,pver,1)) = del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k)/state%pdel(:ncol,pver) 
-                 if (ptend%q(it,k,n) > 1.0e-15_r8 )then
+                 if (ptend%q(it,k,n) > 1.0e-10_r8 )then
                     ptend%q(it,k,1) =  ptend%q(it,k,1) + ptend%q(it,k,n) ! only tend from plume water
                     if (state%pdel(it,k)/state%pdel(it,pver) > 0.0_r8) then
-                           !write(iulog,*) 'kzm_pres_ratio ', state%pdel(it,k)/state%pdel(it,pver), ptend%q(it,k,n)
+                         ! write(iulog,*) 'kzm_pres_ratio ', state%pdel(it,k)/state%pdel(it,pver), &
+                         !                 ptend%q(it,k,n),k,clat(it),clon(it)-360.0_r8 
                          ptend%q(it,pver,1) = ptend%q(it,pver,1) &
-                                                - ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver) ! remove same water at surface
+                                                - 0.5_r8*ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver) ! remove same water at surface
+                         ptend%q(it,pver-1,1) = ptend%q(it,pver-1,1) &
+                                                - 0.5_r8*ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver-1) ! remove same water at surfacea -1
                     endif
                  endif
               end do
