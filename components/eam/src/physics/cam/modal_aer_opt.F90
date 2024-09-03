@@ -209,7 +209,8 @@ subroutine modal_aer_opt_init()
    !$OMP END PARALLEL
 
    ! Add diagnostic fields to history output.
-
+   call addfld ('mass_modes',(/ 'lev' /),    'A','kg/kg','Aerosol total mass [kg/kg]', flag_xyfill=.true.)
+   call addfld ('mass_pm25_modes',(/ 'lev' /),    'A','kg/kg','Aerosol PM2.5 mass [kg/kg]', flag_xyfill=.true.)
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
    call addfld ('EXTINCT1020',(/ 'lev' /),    'A','/m','Aerosol extinction 1020 nm', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
@@ -514,6 +515,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    integer :: nspec
    integer :: istat
 
+!   real(r8) :: mass_modes(pcols,pver,nmodes)        ! kzm: layer mass for all modes
+!   real(r8) :: mass_pm25_modes(pcols,pver,nmodes)        ! kzm: pm2.5 layer mass for all modes
    real(r8) :: mass(pcols,pver)        ! layer mass
    real(r8) :: air_density(pcols,pver) ! (kg/m3)
 
@@ -526,7 +529,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    real(r8), pointer :: dgnumwet(:,:)     ! number mode wet diameter
    real(r8), pointer :: qaerwat(:,:)      ! aerosol water (g/g)
-
+   
    real(r8) :: sigma_logr_aer         ! geometric standard deviation of number distribution
    real(r8) :: radsurf(pcols,pver)    ! aerosol surface mode radius
    real(r8) :: logradsurf(pcols,pver) ! log(aerosol surface mode radius)
@@ -592,6 +595,13 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: scatdust(pcols), scatso4(pcols), scatbc(pcols), &
                scatpom(pcols), scatsoa(pcols), scatseasalt(pcols)
 !kzm
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
+   real(r8) :: mass_modes(pcols,pver,4)        ! kzm: layer mass for all modes
+   real(r8) :: mass_pm25_modes(pcols,pver,4)        ! kzm: pm2.5 layer mass for all modes  
+#elif (defined MODAL_AERO_5MODE)
+   real(r8) :: mass_modes(pcols,pver,5)        ! kzm: layer mass for all modes
+   real(r8) :: mass_pm25_modes(pcols,pver,5)        ! kzm: pm2.5 layer mass for all modes
+#endif
 #if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC || defined MODAL_AERO_5MODE)
    real(r8) :: scatmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
@@ -647,6 +657,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! stratosphere output
    integer  :: ihuge ! a huge integer
    real(r8) :: saodvis(pcols)               ! stratosphere extinction optical depth
+   ! pm2.5 
+   real(r8) :: sigma_in,dgnumdry_in,mass_modes_in
+   real(r8)  :: dgnumdry(pcols,pver)     ! kzm: number mode dry diameter
    !----------------------------------------------------------------------------
 
    lchnk = state%lchnk
@@ -761,7 +774,47 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
+   !kzm ++ calculae pm2.5 dry mass ++
+   !get mass for mode 3
+   if (clim_modal_aero .and. prog_modal_aero) then
+   mass_modes(:,:,:) = 0.0_r8
+   mass_pm25_modes(:,:,:) = 0.0_r8
+   dgnumdry(:,:) = 0.0_r8
+   do m = 1, nmodes 
+      call rad_cnst_get_mode_props(list_idx, m, sigmag=sigma_in)
+      ! get mode info
+      call rad_cnst_get_info(list_idx, m, nspec=nspec)
+      dgnumdry(:,:) =  dgnumdry_m(:,:,m) !kzm for pm2.5  
+      !get mass for each mode
+      do l = 1, nspec
+          call rad_cnst_get_aer_mmr(list_idx, m, l, 'a', state, pbuf, specmmr)
+          call rad_cnst_get_aer_mmr(list_idx, m, l, 'c', state, pbuf, aspecmmr)
+          call rad_cnst_get_aer_props(list_idx, m, l, density_aer=specdens, &
+                                           refindex_aer_sw=specrefindex, spectype=spectype, &
+                                           hygro_aer=hygro_aer)
+          do k = top_lev, pver
+             do i = 1, ncol
+                if ((specmmr(i,k) + aspecmmr(i,k)) > 0.0_r8) then ! if there is a aerosol spec mass
+                   mass_modes(i,k,m) = mass_modes(i,k,m) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                end if
+             end do
+          end do
+      end do ! spec
+      ! calculate PM2.5
+      do k = top_lev, pver
+          do i = 1, ncol
+             !sigma_in = sigma_logr_aer
+             dgnumdry_in = dgnumdry(i,k)
+             mass_modes_in = mass_modes(i,k,m)  
+             call pm2_5_cal(sigma_in, dgnumdry_in, mass_modes_in, mass_pm25_modes(i,k,m))
+          end do
+      end do 
+      !write(iulog,*)'kzm_pm25_m_sigmag ', m, sigma_in
+      !write(iulog,*)'kzm_pm25_cr_pm25 ', mass_modes(10,pver,m), mass_pm25_modes(10,pver,m)
 
+   end do ! mode
+   endif 
+   !kzm --
    do m = 1, nmodes
 
       ! diagnostics for visible band for each mode
@@ -781,6 +834,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
       ! calc size parameter for all columns
       call modal_size_parameters(ncol, sigma_logr_aer, dgnumwet, radsurf, logradsurf, cheb)
+     
 
       do isw = 1, nswbands
          savaervis = (isw .eq. idx_sw_diag)
@@ -829,7 +883,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             hygrolip(:ncol) = 0._r8
 #endif
 
-            ! aerosol species loop
             do l = 1, nspec
                call rad_cnst_get_aer_mmr(list_idx, m, l, 'a', state, pbuf, specmmr)
                call rad_cnst_get_aer_mmr(list_idx, m, l, 'c', state, pbuf, aspecmmr)
@@ -1305,8 +1358,17 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          end if
 
       end if
+   !kzm ++
+   !add PM2.5 output: coarse mode PM2.5 cutoff
+   !the mass of PM2.5 includes mode 1, 2, 4 and cutoff from 3 and 5
+   !real :: alnsg_amode
+   !kzm --
+
+
 
    end do ! nmodes
+
+
 
    !Add contributions from volcanic aerosols directly read in extinction
    if(is_cmip6_volc) then
@@ -1339,6 +1401,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       endif
       aodabs(idxnite(i))    = fillvalue
    end do
+
+
 
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
    call outfld('EXTINCT1020'//diag(list_idx),  extinct1020, pcols, lchnk)
@@ -1399,7 +1463,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          lipaod(idxnite(i)) = fillvalue
 #endif
        end do
-
+      call outfld('mass_modes',  mass_modes, pcols, lchnk)
+      call outfld('mass_pm25_modes',  mass_pm25_modes, pcols, lchnk)
       call outfld('SSAVIS',        ssavis,        pcols, lchnk)
 
       call outfld('AODUV',         aoduv,         pcols, lchnk)
@@ -1555,7 +1620,6 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
    do m = 1, nmodes
-
       dgnumwet => dgnumwet_m(:,:,m)
       qaerwat  => qaerwat_m(:,:,m)
 
@@ -1867,5 +1931,23 @@ end subroutine modal_size_parameters
       enddo
       return
       end subroutine binterp
-
+!kzm ++ 
+ subroutine pm2_5_cal(sigma, dgnumdry_in, mode_mass_in, pm25_out)
+ use shr_spfn_mod,   only: erfc => shr_spfn_erfc 
+ implicit none
+ !integer im,jm,km,ncol
+ real(r8), intent(in)  :: sigma, dgnumdry_in, mode_mass_in
+ real(r8), intent(out) :: pm25_out
+ ! local variables
+ real(r8) :: lndp_cut,alnsg,factoryy,yv_tail,tailfr_volnew
+    lndp_cut = log(2.5e-06_r8) ! pm2.5 cut size in meter
+    alnsg = log(sigma)
+    factoryy = sqrt( 0.5_r8 )/alnsg
+    yv_tail = (lndp_cut - log(dgnumdry_in))*factoryy
+    tailfr_volnew = 0.5_r8*erfc(yv_tail) !here give the fraction of the tail
+    pm25_out = (1.0_r8-tailfr_volnew)*mode_mass_in 
+ !   write(iulog,*)'kzm_lndp_cut_dp ', lndp_cut, log(dgnumdry_in), alnsg, sigma
+ !   write(iulog,*)'kzm_yv_tail ', yv_tail
+ !   write(iulog,*)'kzm_tailfr_volnew ', tailfr_volnew
+ end subroutine pm2_5_cal
 end module modal_aer_opt
