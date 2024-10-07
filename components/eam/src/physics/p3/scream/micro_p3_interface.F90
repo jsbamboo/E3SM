@@ -561,67 +561,6 @@ end subroutine micro_p3_readnl
    call addfld('vap_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from frozen phase')
    call addfld('liq_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
 
-   ! Record of column integral microphysics tendencies
-   ! warm-phase process rates
-   call addfld('I_P3_qrcon',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for rain condensation   (Not in paper?)')
-   call addfld('I_P3_qc2qr_accret_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for cloud droplet accretion by rain')
-   call addfld('I_P3_qc2qr_autoconv_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for cloud droplet autoconversion to rain')
-   call addfld('I_P3_nc_accret_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in cloud droplet number from accretion by rain')
-   call addfld('I_P3_nc2nr_autoconv_tend', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in cloud droplet number from autoconversion')
-   call addfld('I_P3_nc_selfcollect_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in cloud droplet number from self-collection  (Not in paper?)')
-   call addfld('I_P3_nr_selfcollect_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in rain number from self-collection  (Not in paper?)')
-   call addfld('I_P3_nc_nuceat_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in cloud droplet number from activation of CCN')
-   call addfld('I_P3_qccon',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for cloud droplet condensation')
-   call addfld('I_P3_qcnuc',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for activation of cloud droplets from CCN')
-   call addfld('I_P3_qr2qv_evap_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for rain evaporation')
-   call addfld('I_P3_qcevp',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for cloud droplet evaporation')
-   call addfld('I_P3_nr_evap_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in rain number from evaporation')
-   call addfld('I_P3_ncautr', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in rain number from autoconversion of cloud water')
-   ! ice-phase process rates
-   call addfld('I_P3_qccol',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for collection of cloud water by ice')
-   call addfld('I_P3_qwgrth', horiz_only,    'A', 'kg/kg/s', 'P3 wet growth rate')
-   call addfld('I_P3_qidep',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for vapor deposition')
-   call addfld('I_P3_qrcol',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for collection rain mass by ice')
-   call addfld('I_P3_qinuc',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for deposition/condensation freezing nuc')
-   call addfld('I_P3_nc_collect_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in cloud droplet number from collection by ice')
-   call addfld('I_P3_nr_collect_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in rain number from collection by ice')
-   call addfld('I_P3_ni_nucleat_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in ice number from deposition/cond-freezing nucleation')
-   call addfld('I_P3_qi2qv_sublim_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for sublimation of ice')
-   call addfld('I_P3_qi2qr_melt_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for melting of ice')
-   call addfld('I_P3_ni2nr_melt_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for melting of ice')
-   call addfld('I_P3_ni_sublim_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in ice number from sublimation')
-   call addfld('I_P3_ni_selfcollect_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for change in ice number from collection within a category (Not in paper?)')
-   call addfld('I_P3_qc2qi_hetero_frz_tend', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for immersion freezing droplets')
-   call addfld('I_P3_qr2qi_immers_frz_tend', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for immersion freezing rain')
-   call addfld('I_P3_nc2ni_immers_frz_tend', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for immersion freezing droplets')
-   call addfld('I_P3_nr2ni_immers_frz_tend', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for immersion freezing rain')
-   call addfld('I_P3_nr_ice_shed_tend', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for source for rain number from collision of rain/ice above freezing and shedding')
-   call addfld('I_P3_qc2qr_ice_shed_tend',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding')
-   call addfld('I_P3_ncshdc', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)')
-   ! Sedimentation
-   call addfld('I_P3_sed_CLDLIQ',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for liquid cloud content due to sedimentation')
-   call addfld('I_P3_sed_NUMLIQ',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for liquid cloud number due to sedimentation')
-   call addfld('I_P3_sed_CLDRAIN', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for rain cloud content due to sedimentation')
-   call addfld('I_P3_sed_NUMRAIN', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for rain cloud number due to sedimentation')
-   call addfld('I_P3_sed_CLDICE',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for ice cloud content due to sedimentation')
-   call addfld('I_P3_sed_NUMICE',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for ice cloud number due to sedimentation')
-   ! Microphysics Processes
-   call addfld('I_P3_mtend_CLDLIQ',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for liquid cloud content due to micro processes')
-   call addfld('I_P3_mtend_NUMLIQ',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for liquid cloud number due to micro processes')
-   call addfld('I_P3_mtend_CLDRAIN', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for rain cloud content due to micro processes')
-   call addfld('I_P3_mtend_NUMRAIN', horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for rain cloud number due to micro processes')
-   call addfld('I_P3_mtend_CLDICE',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for ice cloud content due to micro processes')
-   call addfld('I_P3_mtend_NUMICE',  horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for ice cloud number due to micro processes')
-   call addfld('I_P3_mtend_Q',       horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for water vapor due to micro processes')
-   call addfld('I_P3_mtend_TH',      horiz_only,    'A', 'kg/m2/s', 'column integral P3 Tendency for potential temp. number due to micro processes')
-   ! phase change tendencies
-   call addfld('I_vap_liq_exchange',  horiz_only,    'A', 'kg/m2/s', 'column integral Tendency for conversion from/to vapor phase to/from liquid phase')
-   call addfld('I_vap_ice_exchange',  horiz_only,    'A', 'kg/m2/s', 'column integral Tendency for conversion from/to vapor phase to/from frozen phase')
-   call addfld('I_liq_ice_exchange',  horiz_only,    'A', 'kg/m2/s', 'column integral Tendency for conversion from/to liquid phase to/from frozen phase')
-   call addfld('I_cond_from_macro',  horiz_only,    'A', 'kg/m2/s', 'column integral Tendency for conversion from/to liquid phase to/from frozen phase')
-   call addfld('I_cond_from_macro_p',  horiz_only,    'A', 'kg/m2/s', 'column integral Tendency for conversion from/to liquid phase to/from frozen phase')
-
-
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
                      history_verbose_out        = history_verbose      , &
