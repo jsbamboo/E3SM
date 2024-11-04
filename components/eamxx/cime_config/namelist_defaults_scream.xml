@@ -359,6 +359,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_remap_file hgrid="ne0np4_CAx32v3">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v3pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
       <spa_remap_file hgrid="ne0np4_CAx64v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx64v1pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
       <spa_remap_file hgrid="ne0np4_CAx128v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx128v1pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_CAx128Altamont100mv2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAne32x128Altamont100mv2pg2_intbilin_se2fv_20241005.nc</spa_remap_file>
       <spa_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
@@ -422,7 +423,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne0np4_CAx32v3">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_CAx64v1">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_CAx128v1">3</rad_frequency>
-      <do_aerosol_rad>true</do_aerosol_rad>
+      <rad_frequency hgrid="ne0np4_CAx128Altamont100mv2">1</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
       <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
@@ -461,6 +462,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne0np4_CAx32v3">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_CAx64v1">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_CAx128v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_CAx128Altamont100mv2">1</number_of_subcycles>
     </mac_aero_mic>
 
     <cosp inherit="atm_proc_base">
@@ -510,6 +512,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <Filename hgrid="ne0np4_CAx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</Filename>
     <Filename hgrid="ne0np4_CAx32v2" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v2np4L128_hiccup-era5-20211024_041823.ncpdq.nc</Filename>
     <Filename hgrid="ne0np4_CAx128v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx128v1np4L128_hiccup-era5-20170107_041823.ncpdq.nc</Filename>
+    <Filename hgrid="ne0np4_CAx128Altamont100mv2" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx128v1np4L128_topo15x12t_CAPT-era5-2023071000_100524.ncpdq.nc</Filename>
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
@@ -528,6 +531,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <topography_filename hgrid="ne0np4_CAx32v3">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v3_pg2_16xdel2.nc</topography_filename>
     <topography_filename hgrid="ne0np4_CAx64v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x64_v1_pg2_16xdel2.nc</topography_filename>
     <topography_filename hgrid="ne0np4_CAx128v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x128_v1_pg2_16xdel2.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_CAx128Altamont100mv2">${DIN_LOC_ROOT}/atm/cam/topo/GMTED2010_15_CAne32x128Altamont100mv2topo15np4pg2_x12t.nc</topography_filename>
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
@@ -605,6 +609,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <ni hgrid="ne256np4|ne512np4|ne1024np4">0.0</ni>
     <nc hgrid="ne0np4_CAx32v1|ne0np4_CAx32v2|ne0np4_CAx32v3|ne0np4_CAx64v1|ne0np4_CAx128v1">0.0</nc>
     <ni hgrid="ne0np4_CAx32v1|ne0np4_CAx32v2|ne0np4_CAx32v3|ne0np4_CAx64v1|ne0np4_CAx128v1">0.0</ni>
+    <nc hgrid="ne0np4_CAx128Altamont100mv2">0.0</nc>
+    <ni hgrid="ne0np4_CAx128Altamont100mv2">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
@@ -697,6 +703,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hv_ref_profiles hgrid="ne0np4_CAx32v3">0</hv_ref_profiles>
     <hv_ref_profiles hgrid="ne0np4_CAx64v1">0</hv_ref_profiles>
     <hv_ref_profiles hgrid="ne0np4_CAx128v1">0</hv_ref_profiles>
+    <hv_ref_profiles hgrid="ne0np4_CAx128Altamont100mv2">6</hv_ref_profiles>
     <hv_ref_profiles COMPSET=".*SCREAM%AQUA.*">0</hv_ref_profiles>
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
@@ -719,6 +726,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne0np4_CAx32v3">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_CAx64v1">5.0e3</nu_top>
     <nu_top hgrid="ne0np4_CAx128v1">2.5e3</nu_top>
+    <nu_top hgrid="ne0np4_CAx128Altamont100mv2">333.334</nu_top>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <pgrad_correction hgrid="ne4np4">0</pgrad_correction> <!-- Value for smooth topography/aquaplanet -->
     <pgrad_correction hgrid="ne120np4">0</pgrad_correction>
@@ -729,6 +737,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <pgrad_correction hgrid="ne0np4_CAx32v3">0</pgrad_correction>
     <pgrad_correction hgrid="ne0np4_CAx64v1">0</pgrad_correction>
     <pgrad_correction hgrid="ne0np4_CAx128v1">0</pgrad_correction>
+    <pgrad_correction hgrid="ne0np4_CAx128Altamont100mv2">1</pgrad_correction>
     <pgrad_correction COMPSET=".*SCREAM%AQUA.*">0</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
@@ -748,6 +757,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne hgrid="ne0np4_CAx32v3">0</se_ne>
     <se_ne hgrid="ne0np4_CAx64v1">0</se_ne>
     <se_ne hgrid="ne0np4_CAx128v1">0</se_ne>
+    <se_ne hgrid="ne0np4_CAx128Altamont100mv2">0</se_ne>
     <se_ne_x>0</se_ne_x>
     <se_ne_x COMPSET=".*DP-EAMxx">5</se_ne_x>
     <se_ne_y>0</se_ne_y>
@@ -779,6 +789,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne0np4_CAx32v3" constraints="gt 0">4.68750</se_tstep>
     <se_tstep hgrid="ne0np4_CAx64v1" constraints="gt 0">4.68750</se_tstep>
     <se_tstep hgrid="ne0np4_CAx128v1" constraints="gt 0">2.34375</se_tstep>
+    <se_tstep hgrid="ne0np4_CAx128Altamont100mv2" constraints="gt 0">0.025</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
     <theta_hydrostatic_mode>False</theta_hydrostatic_mode>
@@ -794,8 +805,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->
     <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
     <dt_tracer_factor constraints="ge 1" hgrid="ne0np4_CA*">8</dt_tracer_factor>
+    <dt_tracer_factor constraints="ge 1" hgrid="ne0np4_CAx128Altamont100mv2">8</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
     <hypervis_subcycle_q hgrid="ne0np4_CA*">8</hypervis_subcycle_q>
+    <hypervis_subcycle_q hgrid="ne0np4_CAx128Altamont100mv2">8</hypervis_subcycle_q>
     <transport_alg hgrid=".*pg2">12</transport_alg>
     <!-- Other settings that we'll trigger based on pg2 for convenience -->
     <se_ftype valid_values="0,2" hgrid=".*pg2">2</se_ftype>
@@ -806,6 +819,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mesh_file hgrid="ne0np4_CAx32v3">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x32_v3.g</mesh_file>
     <mesh_file hgrid="ne0np4_CAx64v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x64_v1.g</mesh_file>
     <mesh_file hgrid="ne0np4_CAx128v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x128_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_CAx128Altamont100mv2">${DIN_LOC_ROOT}/atm/cam/inic/homme/CAne32x128_Altamont100m_v2.g</mesh_file>
   </ctl_nl>
 
 </namelist_defaults>
