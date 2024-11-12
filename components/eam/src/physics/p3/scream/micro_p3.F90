@@ -1109,7 +1109,9 @@ contains
       endif qi_not_small
 
       ! sum ze components and convert to dBZ
-      diag_equiv_reflectivity(k) = 10._rtype*bfb_log10((ze_rain(k) + ze_ice(k))*1.e18_rtype)
+      !diag_equiv_reflectivity(k) = 10._rtype*bfb_log10((ze_rain(k) + ze_ice(k))*1.e18_rtype)
+      !HYMA output reflectivity unit as mm6/mm3
+      diag_equiv_reflectivity(k) = max(ze_rain(k)+ze_ice(k),1.e-22_rtype)*1.e18_rtype
 
       ! if qr is very small then set Nr to 0 (needs to be done here after call
       ! to ice lookup table because a minimum Nr of nsmall will be set otherwise even if qr=0)
@@ -1129,6 +1131,7 @@ contains
        dpres,inv_exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange,qv_prev,t_prev,col_location &
+       ,diag_equiv_reflectivity & !HYMA RADAR reflectivity
 #ifdef SCREAM_CONFIG_IS_CMAKE
        ,elapsed_s &
 #endif

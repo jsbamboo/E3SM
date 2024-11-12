@@ -561,6 +561,11 @@ end subroutine micro_p3_readnl
    call addfld('vap_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from frozen phase')
    call addfld('liq_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
 
+   !HYMA add radar reflectivity as output
+   call addfld('diag_equiv_reflectivity',  (/ 'lev' /), 'A', 'mm6/mm3', 'Equivalent total reflectivity')
+   !call addfld('diag_ze_rain',             (/ 'lev' /), 'A', 'mm6/mm3', 'Equivalent rain reflectivity')
+   !call addfld('diag_ze_ice',              (/ 'lev' /), 'A', 'mm6/mm3', 'Equivalent ice reflectivity')
+
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
                      history_verbose_out        = history_verbose      , &
@@ -652,6 +657,11 @@ end subroutine micro_p3_readnl
          call add_default('P3_mtend_NUMICE',  1, ' ')
          call add_default('P3_mtend_Q',       1, ' ')
          call add_default('P3_mtend_TH',      1, ' ')
+
+         !HYMA add radar reflectivity as output
+         call add_default('diag_equiv_reflectivity',  1, ' ')
+         !call add_default('diag_ze_rain',  1, ' ')
+         !call add_default('diag_ze_ice',   1, ' ')
       end if
    end if
 
@@ -786,6 +796,9 @@ end subroutine micro_p3_readnl
     real(rtype), dimension(pcols,pver) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
     real(rtype) :: dummy_out(pcols,pver)    ! dummy_output variable for p3_main to replace unused variables.
+
+    !HYMA add radar reflectivity as output
+    real(rtype), dimension(pcols,pver) :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice
 
     !Prescribed CCN concentration
     real(rtype), dimension(pcols,pver) :: nccn_prescribed
@@ -1136,7 +1149,8 @@ end subroutine micro_p3_readnl
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
          qv_prev_dry(its:ite,kts:kte),         & ! IN  qv at end of prev p3_main call   kg kg-1
          t_prev(its:ite,kts:kte),          & ! IN  t at end of prev p3_main call    K
-         col_location(its:ite,:3)          & ! IN column locations
+         col_location(its:ite,:3),         & ! IN column locations
+         diag_equiv_reflectivity(its:ite,kts:kte) & !HYMA for radar reflectivity
          )
 
     p3_main_outputs(:,:,:) = -999._rtype
@@ -1475,6 +1489,11 @@ end subroutine micro_p3_readnl
    call outfld('vap_ice_exchange',      vap_ice_exchange,      pcols, lchnk)
    call outfld('vap_liq_exchange',      vap_liq_exchange,      pcols, lchnk)
    call outfld('liq_ice_exchange',      liq_ice_exchange,      pcols, lchnk)
+
+   !HYMA add radar reflectivity as output
+   call outfld('diag_equiv_reflectivity',    diag_equiv_reflectivity,      pcols, lchnk)
+   !call outfld('diag_ze_rain',               diag_ze_rain,                 pcols, lchnk)
+   !call outfld('diag_ze_ice',                diag_ze_ice,                  pcols, lchnk)
 
    call t_stopf('micro_p3_tend_finish')
   end subroutine micro_p3_tend
