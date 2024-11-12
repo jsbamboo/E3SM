@@ -165,6 +165,23 @@
 <ncdata dyn="se" hgrid="ne0np4_twpx4v1"                   nlev="72"                 >atm/cam/inic/homme/cami-mam3_0002-01-01-twpx4v1_L72_c170723.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_enax4v1"                   nlev="72"                 >atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
 
+<!-- ARM RRM ma21 -->
+<ncdata dyn="se" hgrid="ne0np4_GoAmazonx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.GoAmazon_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_CACTIx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.CACTI_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_CACTIx64v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.CACTI_ne32_x64_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_COMBLEx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.COMBLE_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_combx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.COMBLE_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_CONUSx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.CONUS_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_EPCAPEx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.EPCAPE_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_IOMCx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.IOMC_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_IOMCx16v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.IOMC_ne32_x16_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_IOMCx8v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.IOMC_ne32_x8_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_MAGICx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.MAGIC_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_TRACERx32v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.TRACER_ne32_x32_v1.L128.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_TRACERx64v1" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/screami_atm_era5.2020-01-20.TRACER_ne32_x64_v1.L128.nc</ncdata>
+<!-- ARM RRM ma21 end-->
+
+
 <!-- Topography -->
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
 
@@ -215,6 +232,23 @@
 <bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS_sooberingoax4x8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
+
+
+<!-- ARM RRM ma21 -->
+<bnd_topo hgrid="ne0np4_GoAmazonx32v1"  >atm/cam/topo/USGS-gtopo30_GoAmazon_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_CACTIx32v1"  >atm/cam/topo/USGS-gtopo30_CACTI_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_CACTIx64v1"  >atm/cam/topo/USGS-gtopo30_CACTI_ne32_x64_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_COMBLEx32v1"  >atm/cam/topo/USGS-gtopo30_COMBLE_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_combx32v1"  >atm/cam/topo/USGS-gtopo30_COMBLE_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_CONUSx32v1"  >atm/cam/topo/USGS-gtopo30_CONUS_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_EPCAPEx32v1"  >atm/cam/topo/USGS-gtopo30_EPCAPE_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_IOMCx32v1"  >atm/cam/topo/USGS-gtopo30_IOMC_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_IOMCx16v1"  >atm/cam/topo/USGS-gtopo30_IOMC_ne32_x16_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_IOMCx8v1"  >atm/cam/topo/USGS-gtopo30_IOMC_ne32_x8_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_MAGICx32v1"  >atm/cam/topo/USGS-gtopo30_MAGIC_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_TRACERx32v1"  >atm/cam/topo/USGS-gtopo30_TRACER_ne32_x32_v1_pg2_x6t.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_TRACERx64v1"  >atm/cam/topo/USGS-gtopo30_TRACER_ne32_x64_v1_pg2_x6t.nc</bnd_topo>
+
 
 <!-- ieflx_opt 0: atmonly, 3: coupled -->
 <ieflx_opt  ocn="socn"  >0</ieflx_opt>
@@ -805,6 +839,23 @@
 <drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
 <!-- NOTE: ENA dry deposition file interpolated from existing rather than created new -->
 <drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
+
+
+<!-- ARM RRM ma21 -->
+<drydep_srf_file hgrid="ne0np4_GoAmazonx32v1">atm/cam/chem/trop_mam/atmsrf_GoAmazonx32v1_pg2_20230317.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_CACTIx32v1">atm/cam/chem/trop_mam/atmsrf_CACTIx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_CACTIx64v1">atm/cam/chem/trop_mam/atmsrf_CACTIx64v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_COMBLEx32v1">atm/cam/chem/trop_mam/atmsrf_COMBLEx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_combx32v1">atm/cam/chem/trop_mam/atmsrf_COMBLEx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_CONUSx32v1">atm/cam/chem/trop_mam/atmsrf_CONUSx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_EPCAPEx32v1">atm/cam/chem/trop_mam/atmsrf_EPCAPEx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_IOMCx32v1">atm/cam/chem/trop_mam/atmsrf_IOMCx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_IOMCx16v1">atm/cam/chem/trop_mam/atmsrf_IOMCx16v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_IOMCx8v1">atm/cam/chem/trop_mam/atmsrf_IOMCx8v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_MAGICx32v1">atm/cam/chem/trop_mam/atmsrf_MAGICx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_TRACERx32v1">atm/cam/chem/trop_mam/atmsrf_TRACERx32v1_pg2_20230909.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_TRACERx64v1">atm/cam/chem/trop_mam/atmsrf_TRACERx64v1_pg2_20230909.nc</drydep_srf_file>
+
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
@@ -1511,6 +1562,23 @@
 <se_ne hgrid="ne0np4_enax4v1">0</se_ne>
 <se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
 
+
+<!-- ARM RRM ma21 -->
+<se_ne hgrid="ne0np4_GoAmazonx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_CACTIx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_CACTIx64v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_COMBLEx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_combx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_CONUSx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_EPCAPEx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_IOMCx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_IOMCx16v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_IOMCx8v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_MAGICx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_TRACERx32v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_TRACERx64v1" > 0 </se_ne>
+
+
 <mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_CAx32v1"  >atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_CAx64v1"  >atm/cam/inic/homme/CA_ne32_x64_v1.g</mesh_file>
@@ -1535,6 +1603,23 @@
 <mesh_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/inic/homme/sooberingoax4x8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_enax4v1">atm/cam/inic/homme/enax4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_twpx4v1" >atm/cam/inic/homme/twpx4v1.g</mesh_file>
+
+
+<!-- ARM RRM ma21 -->
+<mesh_file hgrid="ne0np4_GoAmazonx32v1" >atm/cam/inic/homme/GoAmazon_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_CACTIx32v1" >atm/cam/inic/homme/CACTI_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_CACTIx64v1" >atm/cam/inic/homme/CACTI_ne32_x64_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_COMBLEx32v1" >atm/cam/inic/homme/COMBLE_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_combx32v1" >atm/cam/inic/homme/COMBLE_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_CONUSx32v1" >atm/cam/inic/homme/CONUS_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_EPCAPEx32v1" >atm/cam/inic/homme/EPCAPE_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_IOMCx32v1" >atm/cam/inic/homme/IOMC_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_IOMCx16v1" >atm/cam/inic/homme/IOMC_ne32_x16_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_IOMCx8v1" >atm/cam/inic/homme/IOMC_ne32_x8_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_MAGICx32v1" >atm/cam/inic/homme/MAGIC_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_TRACERx32v1" >atm/cam/inic/homme/TRACER_ne32_x32_v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_TRACERx64v1" >atm/cam/inic/homme/TRACER_ne32_x64_v1.g</mesh_file>
+
 
 <!-- viscosity  -->
 
@@ -1565,6 +1650,22 @@
 <nu_top dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 1e5 </nu_top>
+
+
+<!-- ARM RRM ma21 -->
+<nu_top dyn_target="theta-l" hgrid="ne0np4_GoAmazonx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_CACTIx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_CACTIx64v1"> 5e3 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_COMBLEx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_combx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_CONUSx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_EPCAPEx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_IOMCx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_IOMCx16v1"> 2e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_IOMCx8v1"> 4e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_MAGICx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_TRACERx32v1"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_TRACERx64v1"> 5e3 </nu_top>
 
 
 <!-- tensor hyperviscsoity -->
@@ -1658,6 +1759,60 @@
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_BJne128x4x32v5"> 2.34375 </se_tstep>
 <dt_tracer_factor dyn_target="theta-l" hgrid="ne0np4_BJne128x4x32v5"> 8 </dt_tracer_factor>
 <hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_BJne128x4x32v5"> 8 </hypervis_subcycle_q>
+
+<!-- ARM RRM ma21 -->
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_GoAmazonx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_GoAmazonx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_GoAmazonx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_CACTIx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_CACTIx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_CACTIx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_CACTIx64v1"> 4.68750 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_CACTIx64v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_CACTIx64v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_COMBLEx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_COMBLEx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_COMBLEx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_combx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_combx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_combx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_CONUSx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_CONUSx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_CONUSx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_EPCAPEx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_EPCAPEx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_EPCAPEx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_IOMCx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_IOMCx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_IOMCx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_IOMCx16v1"> 18.75 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_IOMCx16v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_IOMCx16v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_IOMCx8v1"> 37.5 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_IOMCx8v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_IOMCx8v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_MAGICx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_MAGICx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_MAGICx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_TRACERx32v1"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_TRACERx32v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_TRACERx32v1"> 8    </hypervis_subcycle_q>
+
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_TRACERx64v1"> 4.68750 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_TRACERx64v1"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_TRACERx64v1"> 8    </hypervis_subcycle_q>
+
 
 <dt_remap_factor     dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_remap_factor>
 <dt_tracer_factor    dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_tracer_factor>

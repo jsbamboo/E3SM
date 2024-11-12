@@ -434,6 +434,19 @@
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_twpx4v1">96</value>
+      <value compset=".+" grid="a%ne0np4_GoAmazonx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_CACTIx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_CACTIx64v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_COMBLEx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_combx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_CONUSx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_EPCAPEx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_IOMCx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_IOMCx16v1">576</value>
+      <value compset=".+" grid="a%ne0np4_IOMCx8v1">288</value>
+      <value compset=".+" grid="a%ne0np4_MAGICx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_TRACERx32v1">1152</value>
+      <value compset=".+" grid="a%ne0np4_TRACERx64v1">1152</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
