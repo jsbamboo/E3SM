@@ -217,6 +217,10 @@ Int Functions<S,D>
     const auto oqr_sed             = ekat::subview(history_only.qr_sed, i);
     const auto oqc_sed             = ekat::subview(history_only.qc_sed, i);
     const auto oqi_sed             = ekat::subview(history_only.qi_sed, i);
+    const auto oqmr2qr_melt        = ekat::subview(history_only.qmr2qr_melt,i);
+    const auto oqmr2qv_sublim      = ekat::subview(history_only.qmr2qv_sublim, i);
+    const auto oqc2qi_homfrz       = ekat::subview(history_only.qc2qi_homfrz, i);
+    const auto oqr2qi_homfrz       = ekat::subview(history_only.qr2qi_homfrz, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
@@ -278,6 +282,7 @@ Int Functions<S,D>
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
       oqr2qv_evap, oqi2qv_sublim, oqc2qr_accret, oqc2qr_autoconv, oqv2qi_vapdep,
       oqc2qi_berg, oqc2qr_ice_shed, oqc2qi_collect, oqr2qi_collect, oqc2qi_hetero_freeze, oqr2qi_immers_freeze, oqi2qr_melt,
+      oqmr2qr_melt,oqmr2qv_sublim,
       pratot, prctot, hydrometeorsPresent, nk, runtime_options);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
@@ -318,7 +323,7 @@ Int Functions<S,D>
     // homogeneous freezing of cloud and rain
     if(do_ice_production) {
       homogeneous_freezing(T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc,
-                           onc, oqr, onr, oqi, oni, oqm,oqmr, obm, oth);
+                           onc, oqr, onr, oqi, oni, oqm,oqmr, obm, oqc2qi_homfrz,oqr2qi_homfrz,oth);
     }
 
     //

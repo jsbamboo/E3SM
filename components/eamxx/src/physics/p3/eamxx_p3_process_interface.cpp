@@ -143,6 +143,10 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
     add_field<Computed>("qr_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qi_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qmr2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qmr2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_homfrz",scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr2qi_homfrz",scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
   }
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
@@ -424,6 +428,10 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.qr_sed = get_field_out("qr_sed").get_view<Pack**>();
     history_only.qc_sed = get_field_out("qc_sed").get_view<Pack**>();
     history_only.qi_sed = get_field_out("qi_sed").get_view<Pack**>();
+    history_only.qmr2qr_melt = get_field_out("qmr2qr_melt").get_view<Pack**>();
+    history_only.qmr2qv_sublim = get_field_out("qmr2qv_sublim").get_view<Pack**>();
+    history_only.qc2qi_homfrz = get_field_out("qc2qi_homfrz").get_view<Pack**>();
+    history_only.qr2qi_homfrz = get_field_out("qr2qi_homfrz").get_view<Pack**>();
   } else {
     // if not, let's use the unused buffer
     history_only.qr2qv_evap = m_buffer.unused;
