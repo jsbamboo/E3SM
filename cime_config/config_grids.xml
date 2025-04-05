@@ -1150,6 +1150,26 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
+    <model_grid alias="WP10ne32x32v1pg2_WP10ne32x32v1pg2">
+      <grid name="atm">ne0np4_WP10ne32x32v1.pg2</grid>
+      <grid name="lnd">ne0np4_WP10ne32x32v1.pg2</grid>
+      <grid name="ocnice">ne0np4_WP10ne32x32v1.pg2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="WP20ne32x32v1pg2_WP20ne32x32v1pg2">
+      <grid name="atm">ne0np4_WP20ne32x32v1.pg2</grid>
+      <grid name="lnd">ne0np4_WP20ne32x32v1.pg2</grid>
+      <grid name="ocnice">ne0np4_WP20ne32x32v1.pg2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
     <model_grid alias="northamericax4v1_r0125_oRRS15to5">
       <grid name="atm">ne0np4_northamericax4v1</grid>
       <grid name="lnd">r0125</grid>
@@ -3670,6 +3690,22 @@
       <desc>1-deg with 3 km over California (version 1; as described in Zhang et al. (2024)) pg2:</desc>
     </domain>
 
+    <domain name="ne0np4_WP10ne32x32v1.pg2">
+      <nx>96240</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.WP10ne32x32v1pg2_oRRS18to6v3.250318.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.WP10ne32x32v1pg2_oRRS18to6v3.250318.nc</file>
+      <desc>1-deg with 10 deg x 10 deg 3 km over Western Pacific version 1 pg2:</desc>
+    </domain>
+
+    <domain name="ne0np4_WP20ne32x32v1.pg2">
+      <nx>267792</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.WP20ne32x32v1pg2_oRRS18to6v3.250318.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.WP20ne32x32v1pg2_oRRS18to6v3.250318.nc</file>
+      <desc>1-deg with 20 deg x 20 deg 3 km over Western Pacific version 1 pg2:</desc>
+    </domain>
+
     <domain name="ne0np4_arcticx4v1.pg2">
       <nx>97200</nx>
       <ny>1</ny>
@@ -4648,6 +4684,20 @@
      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_r0125_to_CAne32x32v1pg2_traave.20220430.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_WP10ne32x32v1.pg2" rof_grid="r0125">
+     <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/WP10ne32x32v1pg2/map_WP10ne32x32v1pg2_to_r0125.TRaave.20250318.nc</map>
+     <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/WP10ne32x32v1pg2/map_WP10ne32x32v1pg2_to_r0125.TRaave.20250318.nc</map>
+     <map name="LND2ROF_FMAPNAME">cpl/gridmaps/WP10ne32x32v1pg2/map_WP10ne32x32v1pg2_to_r0125.TRaave.20250318.nc</map>
+     <map name="ROF2LND_FMAPNAME">cpl/gridmaps/WP10ne32x32v1pg2/map_r0125_to_WP10ne32x32v1pg2.TRaave.20250318.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_WP20ne32x32v1.pg2" rof_grid="r0125">
+     <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/WP20ne32x32v1pg2/map_WP20ne32x32v1pg2_to_r0125.TRaave.20250318.nc</map>
+     <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/WP20ne32x32v1pg2/map_WP20ne32x32v1pg2_to_r0125.TRaave.20250318.nc</map>
+     <map name="LND2ROF_FMAPNAME">cpl/gridmaps/WP20ne32x32v1pg2/map_WP20ne32x32v1pg2_to_r0125.TRaave.20250318.nc</map>
+     <map name="ROF2LND_FMAPNAME">cpl/gridmaps/WP20ne32x32v1pg2/map_r0125_to_WP20ne32x32v1pg2.TRaave.20250318.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
