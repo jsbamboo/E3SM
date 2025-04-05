@@ -76,15 +76,16 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
-  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qc", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qr", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qi", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qm", m_grid, kg/kg, ps);
-  add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
-  add_tracer<Updated>("nr", m_grid, 1/kg,  ps);
-  add_tracer<Updated>("ni", m_grid, 1/kg,  ps);
-  add_tracer<Updated>("bm", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("qv",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qr",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qi",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qm",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qmr", m_grid, kg/kg, ps);
+  add_tracer<Updated>("nc",  m_grid, 1/kg,  ps);
+  add_tracer<Updated>("nr",  m_grid, 1/kg,  ps);
+  add_tracer<Updated>("ni",  m_grid, 1/kg,  ps);
+  add_tracer<Updated>("bm",  m_grid, 1/kg,  ps);
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
@@ -118,13 +119,14 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   }
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
-  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
-  add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron,    grid_name, ps);
-  add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron,    grid_name, ps);
-  add_field<Computed>("eff_radius_qr",       scalar3d_layout_mid, micron,    grid_name, ps);
-  add_field<Computed>("precip_total_tend",   scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
-  add_field<Computed>("nevapr",              scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
+  add_field<Updated>("precip_liq_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Updated>("precip_ice_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Computed>("eff_radius_qc",           scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("eff_radius_qi",           scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("eff_radius_qr",           scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("precip_total_tend",       scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
+  add_field<Computed>("nevapr",                  scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
+  add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, nondim,    grid_name, ps);
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
@@ -134,6 +136,28 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
   add_field<Computed>("rainfrac",               scalar3d_layout_mid, nondim, grid_name, ps);
+  // P3 process rate diagnostics, use convention P3_<process_rate>
+  if (runtime_options.p3_extra_diags){
+    add_field<Computed>("P3_qr2qv_evap", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qi2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qr_accret", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qr_autoconv", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qv2qi_vapdep", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qi_berg", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qr_ice_shed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qr2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qi_hetero_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qr2qi_immers_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qi2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qmr2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qmr2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qr_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qi_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qi_homfrz",scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qr2qi_homfrz",scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+  }
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -206,11 +230,11 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.ni_incld, &m_buffer.bm_incld, &m_buffer.inv_dz, &m_buffer.inv_rho, &m_buffer.ze_ice,
     &m_buffer.ze_rain, &m_buffer.prec, &m_buffer.rho, &m_buffer.rhofacr, &m_buffer.rhofaci,
     &m_buffer.acn, &m_buffer.qv_sat_l, &m_buffer.qv_sat_i, &m_buffer.sup, &m_buffer.qv_supersat_i,
-    &m_buffer.tmparr2, &m_buffer.exner, &m_buffer.diag_equiv_reflectivity, &m_buffer.diag_vm_qi,
+    &m_buffer.tmparr2, &m_buffer.exner, &m_buffer.diag_vm_qi,
     &m_buffer.diag_diam_qi, &m_buffer.pratot, &m_buffer.prctot, &m_buffer.qtend_ignore,
     &m_buffer.ntend_ignore, &m_buffer.mu_c, &m_buffer.lamc, &m_buffer.qr_evap_tend, &m_buffer.v_qc,
     &m_buffer.v_nc, &m_buffer.flux_qx, &m_buffer.flux_nx, &m_buffer.v_qit, &m_buffer.v_nit,
-    &m_buffer.flux_nit, &m_buffer.flux_bir, &m_buffer.flux_qir, &m_buffer.flux_qit, &m_buffer.v_qr,
+    &m_buffer.flux_nit, &m_buffer.flux_bir, &m_buffer.flux_qir,&m_buffer.flux_qirr, &m_buffer.flux_qit, &m_buffer.v_qr,
     &m_buffer.v_nr
 #endif
   };
@@ -251,6 +275,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qm"),m_grid,0.0,0.1,false);
+//  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qmr"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),m_grid,0.0,1.e11,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e10,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e10,false);
@@ -295,6 +320,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   const  auto& nr             = get_field_out("nr").get_view<Pack**>();
   const  auto& qi             = get_field_out("qi").get_view<Pack**>();
   const  auto& qm             = get_field_out("qm").get_view<Pack**>();
+  const  auto& qmr            = get_field_out("qmr").get_view<Pack**>();
   const  auto& ni             = get_field_out("ni").get_view<Pack**>();
   const  auto& bm             = get_field_out("bm").get_view<Pack**>();
   auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
@@ -312,7 +338,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // -- Set values for the pre-amble structure
   p3_preproc.set_variables(m_num_cols,m_num_levs,pmid,pmid_dry,pseudo_density,pseudo_density_dry,
                         T_atm,cld_frac_t_in,cld_frac_l_in,cld_frac_i_in,
-                        qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
+                        qv, qc, nc, qr, nr, qi, qm, qmr, ni, bm, qv_prev,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz, runtime_options);
   // --Prognostic State Variables:
   prog_state.qc     = p3_preproc.qc;
@@ -321,6 +347,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   prog_state.nr     = p3_preproc.nr;
   prog_state.qi     = p3_preproc.qi;
   prog_state.qm     = p3_preproc.qm;
+  prog_state.qmr    = p3_preproc.qmr;
   prog_state.ni     = p3_preproc.ni;
   prog_state.bm     = p3_preproc.bm;
   prog_state.th     = p3_preproc.th_atm;
@@ -361,11 +388,12 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   }
 
   // --Diagnostic Outputs
-  diag_outputs.diag_eff_radius_qc = get_field_out("eff_radius_qc").get_view<Pack**>();
-  diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();
-  diag_outputs.diag_eff_radius_qr = get_field_out("eff_radius_qr").get_view<Pack**>();
-  diag_outputs.precip_total_tend  = get_field_out("precip_total_tend").get_view<Pack**>();
-  diag_outputs.nevapr             = get_field_out("nevapr").get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qc      = get_field_out("eff_radius_qc").get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qi      = get_field_out("eff_radius_qi").get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qr      = get_field_out("eff_radius_qr").get_view<Pack**>();
+  diag_outputs.precip_total_tend       = get_field_out("precip_total_tend").get_view<Pack**>();
+  diag_outputs.nevapr                  = get_field_out("nevapr").get_view<Pack**>();
+  diag_outputs.diag_equiv_reflectivity = get_field_out("diag_equiv_reflectivity").get_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
   diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
@@ -379,6 +407,34 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   history_only.liq_ice_exchange = get_field_out("micro_liq_ice_exchange").get_view<Pack**>();
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack**>();
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
+  if(runtime_options.p3_extra_diags) {
+    // if we are doing extra diagnostics, assign the fields to the history only struct
+    history_only.P3_qr2qv_evap   = get_field_out("P3_qr2qv_evap").get_view<Pack**>();
+    history_only.P3_qi2qv_sublim = get_field_out("P3_qi2qv_sublim").get_view<Pack**>();
+    history_only.P3_qc2qr_accret = get_field_out("P3_qc2qr_accret").get_view<Pack**>();
+    history_only.P3_qc2qr_autoconv = get_field_out("P3_qc2qr_autoconv").get_view<Pack**>();
+    history_only.P3_qv2qi_vapdep = get_field_out("P3_qv2qi_vapdep").get_view<Pack**>();
+    history_only.P3_qc2qi_berg = get_field_out("P3_qc2qi_berg").get_view<Pack**>();
+    history_only.P3_qc2qr_ice_shed = get_field_out("P3_qc2qr_ice_shed").get_view<Pack**>();
+    history_only.P3_qc2qi_collect = get_field_out("P3_qc2qi_collect").get_view<Pack**>();
+    history_only.P3_qr2qi_collect = get_field_out("P3_qr2qi_collect").get_view<Pack**>();
+    history_only.P3_qc2qi_hetero_freeze = get_field_out("P3_qc2qi_hetero_freeze").get_view<Pack**>();
+    history_only.P3_qr2qi_immers_freeze = get_field_out("P3_qr2qi_immers_freeze").get_view<Pack**>();
+    history_only.P3_qi2qr_melt = get_field_out("P3_qi2qr_melt").get_view<Pack**>();
+    history_only.P3_qmr2qr_melt = get_field_out("P3_qmr2qr_melt").get_view<Pack**>();
+    history_only.P3_qmr2qv_sublim = get_field_out("P3_qmr2qv_sublim").get_view<Pack**>();
+    history_only.P3_qr_sed = get_field_out("P3_qr_sed").get_view<Pack**>();
+    history_only.P3_qc_sed = get_field_out("P3_qc_sed").get_view<Pack**>();
+    history_only.P3_qi_sed = get_field_out("P3_qi_sed").get_view<Pack**>();
+    history_only.P3_qc2qi_homfrz = get_field_out("P3_qc2qi_homfrz").get_view<Pack**>();
+    history_only.P3_qr2qi_homfrz = get_field_out("P3_qr2qi_homfrz").get_view<Pack**>();
+
+  } else {
+    // if not, let's leave all uninitialized except for the sed ones
+    history_only.P3_qr_sed = m_buffer.unused;
+    history_only.P3_qc_sed = m_buffer.unused;
+    history_only.P3_qi_sed = m_buffer.unused;
+  }
 #ifdef SCREAM_P3_SMALL_KERNELS
   // Temporaries
   temporaries.mu_r                    = m_buffer.mu_r;
@@ -415,7 +471,6 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   temporaries.qv_supersat_i           = m_buffer.qv_supersat_i;
   temporaries.tmparr2                 = m_buffer.tmparr2;
   temporaries.exner                   = m_buffer.exner;
-  temporaries.diag_equiv_reflectivity = m_buffer.diag_equiv_reflectivity;
   temporaries.diag_vm_qi              = m_buffer.diag_vm_qi;
   temporaries.diag_diam_qi            = m_buffer.diag_diam_qi;
   temporaries.pratot                  = m_buffer.pratot;
@@ -434,6 +489,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   temporaries.flux_nit                = m_buffer.flux_nit;
   temporaries.flux_bir                = m_buffer.flux_bir;
   temporaries.flux_qir                = m_buffer.flux_qir;
+  temporaries.flux_qirr                = m_buffer.flux_qirr;
   temporaries.flux_qit                = m_buffer.flux_qit;
   temporaries.v_qr                    = m_buffer.v_qr;
   temporaries.v_nr                    = m_buffer.v_nr;
@@ -444,7 +500,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
                             prog_state.th,pmid,pmid_dry,T_atm,t_prev,
                             pseudo_density,pseudo_density_dry,
                             prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
-                            prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
+                            prog_state.qi, prog_state.qm, prog_state.qmr, prog_state.ni,prog_state.bm,qv_prev,
                             diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,
                             diag_outputs.diag_eff_radius_qr,
                             diag_outputs.precip_liq_surf,diag_outputs.precip_ice_surf,

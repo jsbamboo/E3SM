@@ -99,6 +99,7 @@ public:
         qi(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qi(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Cloud ice mass
         ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(ni(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Cloud ice number
         qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rimmed ice mass
+        qmr(icol, ipack)     = PF::calculate_drymmr_from_wetmmr_dp_based(qmr(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //
         bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(bm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rimmed ice number
         qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qv(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
 
@@ -161,6 +162,7 @@ public:
     view_2d       nr;
     view_2d       qi;
     view_2d       qm;
+    view_2d       qmr;
     view_2d       ni;
     view_2d       bm;
     view_2d       qv_prev;
@@ -180,7 +182,7 @@ public:
            const view_2d_const& cld_frac_t_in_, const view_2d_const& cld_frac_l_in_, const view_2d_const& cld_frac_i_in_,
            const view_2d& qv_, const view_2d& qc_,
            const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
-           const view_2d& qm_, const view_2d& ni_, const view_2d& bm_, const view_2d& qv_prev_,
+           const view_2d& qm_, const view_2d& qmr_, const view_2d& ni_, const view_2d& bm_, const view_2d& qv_prev_,
            const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_,
            const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_,
            const P3F::P3Runtime& runtime_options
@@ -205,6 +207,7 @@ public:
       nr             = nr_;
       qi             = qi_;
       qm             = qm_;
+      qmr            = qmr_;
       ni             = ni_;
       bm             = bm_;
       qv_prev        = qv_prev_;
@@ -260,6 +263,7 @@ public:
         qi(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qi(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Cloud ice mass
         ni(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(ni(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Cloud ice number
         qm(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Rimmed ice mass
+        qmr(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qmr(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Rimmed ice mass
         bm(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(bm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Rimmed ice number
         qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qv(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
         qv_prev(icol,ipack) = qv(icol,ipack);
@@ -309,6 +313,7 @@ public:
     view_2d       nr;
     view_2d       qi;
     view_2d       qm;
+    view_2d       qmr;
     view_2d       ni;
     view_2d       bm;
     view_2d       qv_prev;
@@ -330,7 +335,7 @@ public:
                     const view_2d& T_atm_, const view_2d& T_prev_,
                     const view_2d_const& pseudo_density_, const view_2d_const& pseudo_density_dry_,
                     const view_2d& qv_, const view_2d& qc_, const view_2d& nc_, const view_2d& qr_, const view_2d& nr_,
-                    const view_2d& qi_, const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
+                    const view_2d& qi_, const view_2d& qm_, const view_2d& qmr_, const view_2d& ni_, const view_2d& bm_,
                     const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
                     const view_2d& diag_eff_radius_qi_, const view_2d& diag_eff_radius_qr_,
                     const view_1d_const& precip_liq_surf_flux_, const view_1d_const& precip_ice_surf_flux_,
@@ -351,6 +356,7 @@ public:
       nr                   = nr_;
       qi                   = qi_;
       qm                   = qm_;
+      qmr                  = qmr_;
       ni                   = ni_;
       bm                   = bm_;
       precip_liq_surf_flux = precip_liq_surf_flux_;
@@ -391,7 +397,7 @@ public:
     static constexpr int num_1d_scalar = 2; //no 2d vars now, but keeping 1d struct for future expansion
     // 2d view packed, size (ncol, nlev_packs)
 #ifdef SCREAM_P3_SMALL_KERNELS
-    static constexpr int num_2d_vector = 64;
+    static constexpr int num_2d_vector = 63;
 #else
     static constexpr int num_2d_vector = 8;
 #endif
@@ -418,10 +424,10 @@ public:
       nc_incld, nr_incld, ni_incld, bm_incld,
       inv_dz, inv_rho, ze_ice, ze_rain, prec, rho, rhofacr,
       rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
-      tmparr2, exner, diag_equiv_reflectivity, diag_vm_qi,
+      tmparr2, exner, diag_vm_qi,
       diag_diam_qi, pratot, prctot, qtend_ignore, ntend_ignore,
       mu_c, lamc, qr_evap_tend, v_qc, v_nc, flux_qx, flux_nx,
-      v_qit, v_nit, flux_nit, flux_bir, flux_qir, flux_qit,
+      v_qit, v_nit, flux_nit, flux_bir, flux_qir,flux_qirr, flux_qit,
       v_qr, v_nr;
 #endif
 

@@ -80,6 +80,7 @@ void Functions<S,D>
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& ni_incld,
   const uview_1d<Spack>& qm,
+  const uview_1d<Spack>& qmr,
   const uview_1d<Spack>& qm_incld,
   const uview_1d<Spack>& bm,
   const uview_1d<Spack>& bm_incld,
@@ -90,15 +91,15 @@ void Functions<S,D>
   const P3Runtime& runtime_options)
 {
   // Get temporary workspaces needed for the ice-sed calculation
-  uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
-  workspace.template take_many_contiguous_unsafe<6>(
-    {"V_qit", "V_nit", "flux_nit", "flux_bir", "flux_qir", "flux_qit"},
-    {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
+  uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit, flux_qirr;
+  workspace.template take_many_contiguous_unsafe<7>(
+    {"V_qit", "V_nit", "flux_nit", "flux_bir", "flux_qir", "flux_qit","flux_qirr"},
+    {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit, &flux_qirr});
 
-  const view_1d_ptr_array<Spack, 4>
-    fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir},
-    vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit},
-    qnr_ptr    = {&qi, &ni, &qm, &bm};
+  const view_1d_ptr_array<Spack, 5>
+    fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir,&flux_qirr},
+    vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit, &V_qit},
+    qnr_ptr    = {&qi, &ni, &qm, &bm, &qmr};
 
   // find top, determine qxpresent
   const auto sqi = scalarize(qi);
@@ -172,7 +173,7 @@ void Functions<S,D>
       }, Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
-      generalized_sedimentation<4>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
+      generalized_sedimentation<5>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       //Update _incld values with end-of-step cell-ave values
       //No prob w/ div by cld_frac_i because set to min of 1e-4 in interface.
@@ -200,8 +201,8 @@ void Functions<S,D>
       ni_tend(pk) = (ni(pk) - ni_tend(pk)) * inv_dt; // Liq. # sedimentation tendency, measure
   });
 
-  workspace.template release_many_contiguous<6>(
-    {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
+  workspace.template release_many_contiguous<7>(
+    {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit, &flux_qirr});
 }
 
 template <typename S, typename D>
@@ -219,7 +220,10 @@ void Functions<S,D>
   const uview_1d<Spack>& qi,
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& qm,
+  const uview_1d<Spack>& qmr,
   const uview_1d<Spack>& bm,
+  const uview_1d<Spack>& qc2qi_homfrz,
+  const uview_1d<Spack>& qr2qi_homfrz,
   const uview_1d<Spack>& th_atm)
 {
   constexpr Scalar qsmall          = C::QSMALL;
@@ -252,12 +256,16 @@ void Functions<S,D>
 
     qm(pk).set(qc_ge_small, qm(pk) + Qc_nuc);
     qi(pk).set(qc_ge_small, qi(pk) + Qc_nuc);
+    qc2qi_homfrz(pk).set(qc_ge_small, Qc_nuc);
+
     bm(pk).set(qc_ge_small, bm(pk) + Qc_nuc*inv_rho_rimeMax);
     ni(pk).set(qc_ge_small, ni(pk) + Nc_nuc);
     th_atm(pk).set   (qc_ge_small, th_atm(pk) + inv_exner(pk)*Qc_nuc*latice*inv_cp);
 
     qm(pk).set(qr_ge_small, qm(pk) + Qr_nuc);
+    qmr(pk).set(qr_ge_small, qmr(pk) + Qr_nuc);
     qi(pk).set(qr_ge_small, qi(pk) + Qr_nuc);
+    qr2qi_homfrz(pk).set(qr_ge_small, Qr_nuc);
     bm(pk).set(qr_ge_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
     ni(pk).set(qr_ge_small, ni(pk) + Nr_nuc);
     th_atm(pk).set   (qr_ge_small, th_atm(pk) + inv_exner(pk)*Qr_nuc*latice*inv_cp);

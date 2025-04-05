@@ -148,6 +148,7 @@ Int Functions<Real,DefaultDevice>
   auto nr                      = prognostic_state.nr;
   auto qi                      = prognostic_state.qi;
   auto qm                      = prognostic_state.qm;
+  auto qmr                     = prognostic_state.qmr;
   auto ni                      = prognostic_state.ni;
   auto bm                      = prognostic_state.bm;
   auto qv                      = prognostic_state.qv;
@@ -161,6 +162,7 @@ Int Functions<Real,DefaultDevice>
   auto precip_ice_flux         = diagnostic_outputs.precip_ice_flux;
   auto precip_total_tend       = diagnostic_outputs.precip_total_tend;
   auto nevapr                  = diagnostic_outputs.nevapr;
+  auto diag_equiv_reflectivity = diagnostic_outputs.diag_equiv_reflectivity;
   auto qv_prev                 = diagnostic_inputs.qv_prev;
   auto t_prev                  = diagnostic_inputs.t_prev;
   // Inputs for the heteogeneous freezing
@@ -171,6 +173,18 @@ Int Functions<Real,DefaultDevice>
   auto liq_ice_exchange        = history_only.liq_ice_exchange;
   auto vap_liq_exchange        = history_only.vap_liq_exchange;
   auto vap_ice_exchange        = history_only.vap_ice_exchange;
+  auto P3_qr2qv_evap           = history_only.P3_qr2qv_evap;
+  auto P3_qi2qv_sublim         = history_only.P3_qi2qv_sublim;
+  auto P3_qc2qr_accret         = history_only.P3_qc2qr_accret;
+  auto P3_qc2qr_autoconv       = history_only.P3_qc2qr_autoconv;
+  auto P3_qv2qi_vapdep         = history_only.P3_qv2qi_vapdep;
+  auto P3_qc2qi_berg           = history_only.P3_qc2qi_berg;
+  auto P3_qc2qr_ice_shed       = history_only.P3_qc2qr_ice_shed;
+  auto P3_qc2qi_collect        = history_only.P3_qc2qi_collect;
+  auto P3_qr2qi_collect        = history_only.P3_qr2qi_collect;
+  auto P3_qc2qi_hetero_freeze  = history_only.P3_qc2qi_hetero_freeze;
+  auto P3_qr2qi_immers_freeze  = history_only.P3_qr2qi_immers_freeze;
+  auto P3_qi2qr_melt           = history_only.P3_qi2qr_melt;
   auto mu_r                    = temporaries.mu_r;
   auto T_atm                   = temporaries.T_atm;
   auto lamr                    = temporaries.lamr;
@@ -205,7 +219,6 @@ Int Functions<Real,DefaultDevice>
   auto qv_supersat_i           = temporaries.qv_supersat_i;
   auto tmparr2                 = temporaries.tmparr2;
   auto exner                   = temporaries.exner;
-  auto diag_equiv_reflectivity = temporaries.diag_equiv_reflectivity;
   auto diag_vm_qi              = temporaries.diag_vm_qi;
   auto diag_diam_qi            = temporaries.diag_diam_qi;
   auto pratot                  = temporaries.pratot;
@@ -224,6 +237,7 @@ Int Functions<Real,DefaultDevice>
   auto flux_nit                = temporaries.flux_nit;
   auto flux_bir                = temporaries.flux_bir;
   auto flux_qir                = temporaries.flux_qir;
+  auto flux_qirr                = temporaries.flux_qirr;
   auto flux_qit                = temporaries.flux_qit;
   auto v_qr                    = temporaries.v_qr;
   auto v_nr                    = temporaries.v_nr;
@@ -248,7 +262,7 @@ Int Functions<Real,DefaultDevice>
       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
       inv_cld_frac_r,
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
-      rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
+      rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm, qmr, 
       bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
@@ -262,10 +276,12 @@ Int Functions<Real,DefaultDevice>
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
       cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
+      qv, th, qc, nc, qr, nr, qi, ni, qm, qmr, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
+      P3_qr2qv_evap, P3_qi2qv_sublim, P3_qc2qr_accret, P3_qc2qr_autoconv, P3_qv2qi_vapdep, P3_qc2qi_berg,
+      P3_qc2qr_ice_shed, P3_qc2qi_collect, P3_qr2qi_collect, P3_qc2qi_hetero_freeze, P3_qr2qi_immers_freeze, P3_qi2qr_melt,
       pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not

@@ -132,7 +132,7 @@ Int Functions<S,D>
       // Other
       inv_dz, inv_rho, ze_ice, ze_rain, prec, rho,
       rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
-      tmparr1, exner, diag_equiv_reflectivity, diag_vm_qi, diag_diam_qi, pratot, prctot,
+      tmparr1, exner, diag_vm_qi, diag_diam_qi, pratot, prctot,
 
       // p3_tend_out, may not need these
       qtend_ignore, ntend_ignore,
@@ -140,14 +140,14 @@ Int Functions<S,D>
       // Variables still used in F90 but removed from C++ interface
       mu_c, lamc, qr_evap_tend;
 
-    workspace.template take_many_and_reset<44>(
+    workspace.template take_many_and_reset<43>(
       {
         "mu_r", "T_atm", "lamr", "logn0r", "nu", "cdist", "cdist1", "cdistr",
         "inv_cld_frac_i", "inv_cld_frac_l", "inv_cld_frac_r", "qc_incld", "qr_incld", "qi_incld", "qm_incld",
         "nc_incld", "nr_incld", "ni_incld", "bm_incld",
         "inv_dz", "inv_rho", "ze_ice", "ze_rain", "prec", "rho",
         "rhofacr", "rhofaci", "acn", "qv_sat_l", "qv_sat_i", "sup", "qv_supersat_i",
-        "tmparr1", "exner", "diag_equiv_reflectivity", "diag_vm_qi", "diag_diam_qi",
+        "tmparr1", "exner", "diag_vm_qi", "diag_diam_qi",
         "pratot", "prctot", "qtend_ignore", "ntend_ignore",
         "mu_c", "lamc", "qr_evap_tend"
       },
@@ -157,7 +157,7 @@ Int Functions<S,D>
         &nc_incld, &nr_incld, &ni_incld, &bm_incld,
         &inv_dz, &inv_rho, &ze_ice, &ze_rain, &prec, &rho,
         &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
-        &tmparr1, &exner, &diag_equiv_reflectivity, &diag_vm_qi, &diag_diam_qi,
+        &tmparr1, &exner, &diag_vm_qi, &diag_diam_qi,
         &pratot, &prctot, &qtend_ignore, &ntend_ignore,
         &mu_c, &lamc, &qr_evap_tend
       });
@@ -182,6 +182,7 @@ Int Functions<S,D>
     const auto onr                 = ekat::subview(prognostic_state.nr, i);
     const auto oqi                 = ekat::subview(prognostic_state.qi, i);
     const auto oqm                 = ekat::subview(prognostic_state.qm, i);
+    const auto oqmr                = ekat::subview(prognostic_state.qmr, i);
     const auto oni                 = ekat::subview(prognostic_state.ni, i);
     const auto obm                 = ekat::subview(prognostic_state.bm, i);
     const auto oqv                 = ekat::subview(prognostic_state.qv, i);
@@ -195,9 +196,29 @@ Int Functions<S,D>
     const auto oprecip_ice_flux    = ekat::subview(diagnostic_outputs.precip_ice_flux, i);
     const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
     const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
+    const auto odiag_equiv_refl    = ekat::subview(diagnostic_outputs.diag_equiv_reflectivity, i);
     const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);
     const auto ovap_liq_exchange   = ekat::subview(history_only.vap_liq_exchange, i);
     const auto ovap_ice_exchange   = ekat::subview(history_only.vap_ice_exchange, i);
+    const auto oP3_qr2qv_evap      = ekat::subview(history_only.P3_qr2qv_evap, i);
+    const auto oP3_qi2qv_sublim    = ekat::subview(history_only.P3_qi2qv_sublim, i);
+    const auto oP3_qc2qr_accret    = ekat::subview(history_only.P3_qc2qr_accret,i);
+    const auto oP3_qc2qr_autoconv  = ekat::subview(history_only.P3_qc2qr_autoconv,i);
+    const auto oP3_qv2qi_vapdep    = ekat::subview(history_only.P3_qv2qi_vapdep,i);
+    const auto oP3_qc2qi_berg      = ekat::subview(history_only.P3_qc2qi_berg,i);
+    const auto oP3_qc2qr_ice_shed  = ekat::subview(history_only.P3_qc2qr_ice_shed,i);
+    const auto oP3_qc2qi_collect   = ekat::subview(history_only.P3_qc2qi_collect,i);
+    const auto oP3_qr2qi_collect   = ekat::subview(history_only.P3_qr2qi_collect,i);
+    const auto oP3_qc2qi_hetero_freeze = ekat::subview(history_only.P3_qc2qi_hetero_freeze,i);
+    const auto oP3_qr2qi_immers_freeze = ekat::subview(history_only.P3_qr2qi_immers_freeze,i);
+    const auto oP3_qi2qr_melt      =  ekat::subview(history_only.P3_qi2qr_melt,i);
+    const auto oP3_qmr2qr_melt      =  ekat::subview(history_only.P3_qmr2qr_melt,i);
+    const auto oP3_qmr2qv_sublim    = ekat::subview(history_only.P3_qmr2qv_sublim, i);
+    const auto oP3_qr_sed          = ekat::subview(history_only.P3_qr_sed, i);
+    const auto oP3_qc_sed          = ekat::subview(history_only.P3_qc_sed, i);
+    const auto oP3_qi_sed          = ekat::subview(history_only.P3_qi_sed, i);
+    const auto oP3_qc2qi_homfrz          = ekat::subview(history_only.P3_qc2qi_homfrz, i);
+    const auto oP3_qr2qi_homfrz          = ekat::subview(history_only.P3_qr2qi_homfrz, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
@@ -224,7 +245,7 @@ Int Functions<S,D>
     // initialize
     p3_main_init(
       team, nk_pack,
-      ocld_frac_i, ocld_frac_l, ocld_frac_r, oinv_exner, oth, odz, diag_equiv_reflectivity,
+      ocld_frac_i, ocld_frac_l, ocld_frac_r, oinv_exner, oth, odz, odiag_equiv_refl,
       ze_ice, ze_rain, odiag_eff_radius_qc, odiag_eff_radius_qi, odiag_eff_radius_qr,
       inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r, exner, T_atm, oqv, inv_dz,
       diagnostic_outputs.precip_liq_surf(i), diagnostic_outputs.precip_ice_surf(i), zero_init);
@@ -234,7 +255,7 @@ Int Functions<S,D>
       opres, odpres, odz, onc_nuceat_tend, onccn_prescribed, oinv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
       inv_cld_frac_r,
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
-      rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
+      rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, oqmr,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
@@ -252,11 +273,12 @@ Int Functions<S,D>
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm,
+      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, oqmr, obm,
       qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
-      ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
+      ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,oP3_qr2qv_evap,oP3_qi2qv_sublim,oP3_qc2qr_accret, oP3_qc2qr_autoconv, oP3_qv2qi_vapdep,
+      oP3_qc2qi_berg, oP3_qc2qr_ice_shed, oP3_qc2qi_collect, oP3_qr2qi_collect, oP3_qc2qi_hetero_freeze, oP3_qr2qi_immers_freeze, oP3_qi2qr_melt,oP3_qmr2qr_melt,oP3_qmr2qv_sublim,
       pratot, prctot, hydrometeorsPresent, nk, runtime_options);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
@@ -277,27 +299,27 @@ Int Functions<S,D>
     cloud_sedimentation(
       qc_incld, rho, inv_rho, ocld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, team, workspace,
       nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
-      oqc, onc, nc_incld, mu_c, lamc, qtend_ignore, ntend_ignore,
+      oqc, onc, nc_incld, mu_c, lamc, oP3_qc_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf(i));
 
     // Rain sedimentation:  (adaptive substepping)
     rain_sedimentation(
       rho, inv_rho, rhofacr, ocld_frac_r, inv_dz, qr_incld, team, workspace,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, oqr,
-      onr, nr_incld, mu_r, lamr, oprecip_liq_flux, qtend_ignore, ntend_ignore,
+      onr, nr_incld, mu_r, lamr, oprecip_liq_flux, oP3_qr_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf(i), runtime_options);
 
     // Ice sedimentation:  (adaptive substepping)
     ice_sedimentation(
       rho, inv_rho, rhofaci, ocld_frac_i, inv_dz, team, workspace, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, oqi, qi_incld, oni, ni_incld,
-      oqm, qm_incld, obm, bm_incld, qtend_ignore, ntend_ignore,
+      oqm,oqmr, qm_incld, obm, bm_incld, oP3_qi_sed, ntend_ignore,
       lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i), runtime_options);
 
     // homogeneous freezing of cloud and rain
     if(do_ice_production) {
       homogeneous_freezing(T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc,
-                           onc, oqr, onr, oqi, oni, oqm, obm, oth);
+                           onc, oqr, onr, oqi, oni, oqm,oqmr, obm, oP3_qc2qi_homfrz,oP3_qr2qi_homfrz,oth);
     }
 
     //
@@ -309,7 +331,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
-      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr, runtime_options);
+      orho_qi, odiag_equiv_refl, odiag_eff_radius_qc, odiag_eff_radius_qr, runtime_options);
 
     //
     // merge ice categories with similar properties
