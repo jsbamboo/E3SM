@@ -82,5 +82,9 @@
 <horiz_grid dyn="se" hgrid="ne0np4_enax4v1"                   ncol="78788"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_twpx4v1"                   ncol="81434"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" ncol="105707" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_WP10ne32x32v1"             ncol="216542" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_WP10ne32x32v1.pg2"         ncol="96240"  csne="0" csnp="4" npg="2" />
+<horiz_grid dyn="se" hgrid="ne0np4_WP20ne32x32v1"             ncol="602534" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_WP20ne32x32v1.pg2"         ncol="267792" csne="0" csnp="4" npg="2" />
 
 </config_horiz_grid>
