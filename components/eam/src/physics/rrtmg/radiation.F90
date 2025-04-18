@@ -668,6 +668,10 @@ end function radiation_nextsw_cday
        end if
     end do
 
+    ! Cosine of solar zenith angle (primarily for debugging)
+    call addfld('COSZRS', horiz_only, 'A', 'None', &
+                'Cosine of solar zenith angle', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
     if (single_column .and. scm_crm_mode) then
        call add_default ('FUS     ', 1, ' ')
@@ -1110,6 +1114,8 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
+
+    call outfld('COSZRS', coszrs, pcols, lchnk)
     
     if (swrad_off) then
        coszrs(:)=0._r8 ! coszrs is only output for zenith
