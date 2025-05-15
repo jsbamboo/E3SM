@@ -13,6 +13,7 @@ fields:
     - misr_cthtau
     - cosp_sunlit
     - isccp_cldtot
+    - isccp_meanptop
 output_control:
   frequency: 1
   frequency_units: nhours
