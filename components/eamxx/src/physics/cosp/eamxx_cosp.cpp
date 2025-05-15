@@ -90,6 +90,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("eff_radius_qi",     scalar3d_mid, micron,      grid_name);
   // Set of fields used strictly as output
   add_field<Computed>("isccp_cldtot", scalar2d, percent, grid_name);
+  add_field<Computed>("isccp_meanptop", scalar2d, Pa, grid_name);
   add_field<Computed>("isccp_ctptau", scalar4d_ctptau, percent, grid_name, 1);
   add_field<Computed>("modis_ctptau", scalar4d_ctptau, percent, grid_name, 1);
   add_field<Computed>("misr_cthtau", scalar4d_cthtau, percent, grid_name, 1);
@@ -112,8 +113,8 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   // Add note to output files about processing ISCCP fields that are only valid during
   // daytime. This can go away once I/O can handle masked time averages.
   using stratts_t = std::map<std::string,std::string>;
-  std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
-  for (const auto field_name : {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"}) {
+  std::list<std::string> vnames = {"isccp_cldtot", "isccp_meanptop", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
+  for (const auto field_name : {"isccp_cldtot", "isccp_meanptop", "isccp_ctptau", "modis_ctptau", "misr_cthtau"}) {
       auto& f = get_field_out(field_name);
       auto& atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
       atts["note"] = "Night values are zero; divide by cosp_sunlit to get daytime mean";
@@ -227,6 +228,7 @@ void Cosp::run_impl (const double dt)
     const auto dtau105_h = get_field_in("dtau105").get_view<const Real**, Host>();
 
     auto isccp_cldtot_h = get_field_out("isccp_cldtot").get_view<Real*, Host>();
+    auto isccp_meanptop_h = get_field_out("isccp_meanptop").get_view<Real*, Host>();
     auto isccp_ctptau_h = get_field_out("isccp_ctptau").get_view<Real***, Host>();
     auto modis_ctptau_h = get_field_out("modis_ctptau").get_view<Real***, Host>();
     auto misr_cthtau_h  = get_field_out("misr_cthtau").get_view<Real***, Host>();
@@ -238,13 +240,14 @@ void Cosp::run_impl (const double dt)
             m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw,
             sunlit_h, skt_h, T_mid_h, p_mid_h, p_int_h, z_mid_h, qv_h, qc_h, qi_h,
             cldfrac_h, reff_qc_h, reff_qi_h, dtau067_h, dtau105_h,
-            isccp_cldtot_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h
+            isccp_cldtot_h, isccp_meanptop_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h
     );
     // Remask night values to ZERO since our I/O does not know how to handle masked/missing values
     // in temporal averages; this is all host data, so we can just use host loops like its the 1980s
     for (int i = 0; i < m_num_cols; i++) {
       if (sunlit_h(i) == 0) {
         isccp_cldtot_h(i) = 0;
+        isccp_meanptop_h(i) = 0;
         for (int j = 0; j < m_num_tau; j++) {
           for (int k = 0; k < m_num_ctp; k++) {
             isccp_ctptau_h(i,j,k) = 0;
@@ -259,6 +262,7 @@ void Cosp::run_impl (const double dt)
 
     // Make sure dev data is up to date
     get_field_out("isccp_cldtot").sync_to_dev();
+    get_field_out("isccp_meanptop").sync_to_dev();
     get_field_out("isccp_ctptau").sync_to_dev();
     get_field_out("modis_ctptau").sync_to_dev();
     get_field_out("misr_cthtau").sync_to_dev();
@@ -274,6 +278,7 @@ void Cosp::run_impl (const double dt)
     //
     // TODO: mask this when/if the AD ever supports masked averages
     get_field_out("isccp_cldtot").deep_copy(0);
+    get_field_out("isccp_meanptop").deep_copy(0);
     get_field_out("isccp_ctptau").deep_copy(0);
     get_field_out("modis_ctptau").deep_copy(0);
     get_field_out("misr_cthtau").deep_copy(0);

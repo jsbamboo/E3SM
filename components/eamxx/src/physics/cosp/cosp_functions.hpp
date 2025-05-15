@@ -8,7 +8,7 @@ extern "C" void cosp_c2f_run(const int ncol, const int nsubcol, const int nlay, 
     const Real emsfc_lw, const Real* sunlit, const Real* skt,
     const Real* T_mid, const Real* p_mid, const Real* p_int, const Real* z_mid, const Real* qv, const Real* qc, const Real* qi,
     const Real* cldfrac, const Real* reff_qc, const Real* reff_qi, const Real* dtau067, const Real* dtau105,
-    Real* isccp_cldtot, Real* isccp_ctptau, Real* modis_ctptau, Real* misr_cthtau);
+    Real* isccp_cldtot, Real* isccp_meanptop, Real* isccp_ctptau, Real* modis_ctptau, Real* misr_cthtau);
 
 namespace scream {
 
@@ -38,7 +38,7 @@ namespace scream {
                 const view_2d<const Real>& qi, const view_2d<const Real>& cldfrac,
                 const view_2d<const Real>& reff_qc, const view_2d<const Real>& reff_qi,
                 const view_2d<const Real>& dtau067, const view_2d<const Real>& dtau105,
-                const view_1d<Real>& isccp_cldtot , const view_3d<Real>& isccp_ctptau,
+                const view_1d<Real>& isccp_cldtot , const view_1d<Real>& isccp_meanptop, const view_3d<Real>& isccp_ctptau,
                 const view_3d<Real>& modis_ctptau, const view_3d<Real>& misr_cthtau) {
 
             // Make host copies and permute data as needed
@@ -81,7 +81,7 @@ namespace scream {
                     emsfc_lw, sunlit.data(), skt.data(), T_mid_h.data(), p_mid_h.data(), p_int_h.data(),
                     z_mid_h.data(), qv_h.data(), qc_h.data(), qi_h.data(),
                     cldfrac_h.data(), reff_qc_h.data(), reff_qi_h.data(), dtau067_h.data(), dtau105_h.data(),
-                    isccp_cldtot.data(), isccp_ctptau_h.data(), modis_ctptau_h.data(), misr_cthtau_h.data());
+                    isccp_cldtot.data(), isccp_meanptop.data(), isccp_ctptau_h.data(), modis_ctptau_h.data(), misr_cthtau_h.data());
 
             // Copy outputs back to layoutRight views
             for (int i = 0; i < ncol; i++) {
