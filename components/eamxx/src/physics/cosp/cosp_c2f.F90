@@ -55,7 +55,7 @@ module cosp_c2f
   ! Logicals to control output
   ! Hard-code logicals for now; these need to be consistent with EAMxx outputs anyways
   logical :: &
-         Lpctisccp           = .false., & ! ISCCP mean cloud top pressure
+         Lpctisccp           = .true. , & ! ISCCP mean cloud top pressure
          Lclisccp            = .true. , & ! ISCCP cloud area fraction
          Lboxptopisccp       = .false., & ! ISCCP CTP in each column
          Lboxtauisccp        = .false., & ! ISCCP optical epth in each column
@@ -272,14 +272,14 @@ contains
 
   subroutine cosp_c2f_run(npoints, ncolumns, nlevels, ntau, nctp, ncth, &
        emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, z_mid, qv, qc, qi, &
-       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_ctptau, modis_ctptau, misr_cthtau &
+       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_meanptop, isccp_ctptau, modis_ctptau, misr_cthtau &
        ) bind(C, name='cosp_c2f_run')
     integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels, ntau, nctp, ncth
     real(kind=c_double), value, intent(in) :: emsfc_lw
     real(kind=c_double), intent(in), dimension(npoints) :: sunlit, skt
     real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, z_mid, qv, qc, qi, cldfrac, reff_qc, reff_qi, dtau067, dtau105
     real(kind=c_double), intent(in), dimension(npoints,nlevels+1) :: p_int
-    real(kind=c_double), intent(inout), dimension(npoints) :: isccp_cldtot
+    real(kind=c_double), intent(inout), dimension(npoints) :: isccp_cldtot, isccp_meanptop
     real(kind=c_double), intent(inout), dimension(npoints,ntau,nctp) :: isccp_ctptau, modis_ctptau
     real(kind=c_double), intent(inout), dimension(npoints,ntau,ncth) :: misr_cthtau
     ! Takes normal arrays as input and populates COSP derived types
@@ -356,6 +356,7 @@ contains
 
     ! Translate derived types to output arrays
     isccp_cldtot(:npoints) = cospOUT%isccp_totalcldarea(:npoints)
+    isccp_meanptop(:npoints)   = cospOUT%isccp_meanptop(:npoints)
     isccp_ctptau(:npoints,:,:) = cospOUT%isccp_fq(:npoints,:,:)
 
     ! Modis
