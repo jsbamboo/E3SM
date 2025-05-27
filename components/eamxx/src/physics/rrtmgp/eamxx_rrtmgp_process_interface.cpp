@@ -806,8 +806,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
   const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
-  auto ts = start_of_step_ts();
+  //auto ts = start_of_step_ts();
+  auto ts = end_of_step_ts();
   auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
+  printf("(zhang73) check radiation_do: start_step = %d, end_step = %d, freq = %d, update_rad = %s\n",
+         start_of_step_ts().get_num_steps(),
+         end_of_step_ts().get_num_steps(),
+         m_rad_freq_in_steps,
+         update_rad? "true" : "false");
 
   if (update_rad) {
     // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array

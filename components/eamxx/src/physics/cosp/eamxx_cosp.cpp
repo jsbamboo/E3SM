@@ -139,6 +139,12 @@ void Cosp::run_impl (const double dt)
 
   // Compare frequency in steps with current timestep
   auto update_cosp = cosp_do(cosp_freq_in_steps, end_of_step_ts().get_num_steps());
+  printf("(zhang73) check cosp_do: start_step = %d, end_step = %d, freq = %d, update_cosp = %s\n",
+         start_of_step_ts().get_num_steps(),
+         end_of_step_ts().get_num_steps(),
+         cosp_freq_in_steps,
+         update_cosp ? "true" : "false");
+
 
   // Call COSP wrapper routines
   if (update_cosp) {
