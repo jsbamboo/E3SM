@@ -95,8 +95,7 @@ get_my_triplets (const std::string& map_file) const
   int map_file_min_col = std::numeric_limits<int>::max();
   for (int id=0; id<nlweights; id++) {
     map_file_min_row = std::min(rows[id],map_file_min_row);
-    //map_file_min_col = std::min(cols[id],map_file_min_col);
-    map_file_min_col = 1;
+    map_file_min_col = std::min(cols[id],map_file_min_col);
   }
   int global_map_file_min_row, global_map_file_min_col;
   comm.all_reduce(&map_file_min_row,&global_map_file_min_row,1,MPI_MIN);
