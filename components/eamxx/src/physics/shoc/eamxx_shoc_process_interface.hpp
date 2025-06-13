@@ -119,6 +119,9 @@ public:
 
         rrho(i,k) = inv_ggr*(pseudo_density(i,k)/dz(i,k));
         wm_zt(i,k) = -1*omega(i,k)/(rrho(i,k)*ggr);
+
+        mass_flux_up(i,k) = ekat::max(0, omega(i,k)) * inv_ggr;
+        mass_flux_dn(i,k) = ekat::max(0, -omega(i,k)) * inv_ggr;
       });
       team.team_barrier();
 
@@ -204,6 +207,8 @@ public:
     view_2d        cloud_frac;
     view_2d        cldfrac_liq;
     view_2d        cldfrac_liq_prev;
+    view_2d        mass_flux_up;
+    view_2d        mass_flux_dn;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
@@ -220,7 +225,8 @@ public:
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
                        const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_,
-                       const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_)
+                       const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_,
+                       const view_2d& mass_flux_up_,const view_2d& mass_flux_dn_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -263,6 +269,8 @@ public:
       qw = qw_;
       cldfrac_liq=cldfrac_liq_;
       cldfrac_liq_prev=cldfrac_liq_prev_;
+      mass_flux_up = mass_flux_up_;
+      mass_flux_dn = mass_flux_dn_;
     } // set_variables
   }; // SHOCPreprocess
   /* --------------------------------------------------------------------------------------------*/
@@ -391,7 +399,7 @@ public:
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SHOC_SMALL_KERNELS
-    static constexpr int num_2d_vector_mid  = 20;
+    static constexpr int num_2d_vector_mid  = 22;
     static constexpr int num_2d_vector_int  = 12;
 #else
     static constexpr int num_2d_vector_mid  = 22;
@@ -440,6 +448,8 @@ public:
     uview_2d<Spack> isotropy;
     uview_2d<Spack> shoc_cond;
     uview_2d<Spack> shoc_evap;
+    uview_2d<Spack> mass_flux_up;
+    uview_2d<Spack> mass_flux_dn;
     uview_2d<Spack> w_sec;
     uview_2d<Spack> thl_sec;
     uview_2d<Spack> qw_sec;

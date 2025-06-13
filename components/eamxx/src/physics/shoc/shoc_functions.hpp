@@ -187,6 +187,10 @@ struct Functions
     view_2d<Spack>  shoc_cond;
     // Evaporation rate [kg/kg/s]
     view_2d<Spack>  shoc_evap;
+    // Upward mass flux [kg/m2/s]
+    view_2d<Spack>  mass_flux_up;
+    // Downward mass flux [kg/m2/s]
+    view_2d<Spack>  mass_flux_dn;
     // vertical velocity variance [m2/s2]
     view_2d<Spack>  w_sec;
     // temperature variance [K^2]
