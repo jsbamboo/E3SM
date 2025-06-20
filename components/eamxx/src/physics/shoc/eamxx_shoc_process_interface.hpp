@@ -120,8 +120,8 @@ public:
         rrho(i,k) = inv_ggr*(pseudo_density(i,k)/dz(i,k));
         wm_zt(i,k) = -1*omega(i,k)/(rrho(i,k)*ggr);
 
-        mass_flux_up(i,k) = ekat::max(0, omega(i,k)) * inv_ggr;
-        mass_flux_dn(i,k) = ekat::max(0, -omega(i,k)) * inv_ggr;
+        mass_flux_up(i,k) = ekat::max(0, -1*omega(i,k)) * inv_ggr;
+        mass_flux_dn(i,k) = ekat::max(0, omega(i,k)) * inv_ggr;
       });
       team.team_barrier();
 
