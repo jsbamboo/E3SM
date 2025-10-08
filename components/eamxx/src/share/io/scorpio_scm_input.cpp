@@ -1,12 +1,32 @@
 #include "share/io/scorpio_scm_input.hpp"
 #include "share/io/scorpio_input.hpp"
 
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/grid/point_grid.hpp"
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <memory>
+
+// Anonymous namespace, in case other TU's define the same type
+namespace {
+struct RealInt
+{
+  scream::Real val;
+  int  idx;
+};
+}
+// Specialize ekat's get_mpi_type for RealInt (needed for the all_reduce call)
+namespace ekat {
+  template<>
+  MPI_Datatype get_mpi_type<RealInt> () {
+#ifdef SCREAM_DOUBLE_PRECISION
+    return MPI_DOUBLE_INT;
+#else
+    return MPI_FLOAT_INT;
+#endif
+  }
+} // namespace ekat
 
 namespace scream
 {
@@ -23,10 +43,11 @@ SCMInput (const std::string& filename,
   scorpio::register_file(m_filename,scorpio::Read,iotype);
 
   // Some input files have the "time" dimension as non-unlimited. This messes up our
-  // scorpio interface. To avoid trouble, if a dim called 'time' is present we
-  // treat it as unlimited, even though it isn't.
-  if (scorpio::has_dim(m_filename,"time") and not scorpio::is_dim_unlimited(m_filename,"time")) {
-    scorpio::pretend_dim_is_unlimited(m_filename,"time");
+  // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
+  // slices. This ptr is automatically inited to the unlimited dim in the file. If there is
+  // no unlim dim, this ptr remains inited.
+  if (not scorpio::has_time_dim(m_filename) and scorpio::has_dim(m_filename,"time")) {
+    scorpio::mark_dim_as_time(m_filename,"time");
   }
 
   create_io_grid ();
@@ -61,6 +82,12 @@ SCMInput::
   scorpio::release_file(m_filename);
 }
 
+void SCMInput::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+  EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
+  m_atm_logger = atm_logger;
+}
+
 void SCMInput::create_io_grid ()
 {
   EKAT_REQUIRE_MSG (scorpio::has_dim(m_filename,"ncol"),
@@ -81,8 +108,10 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   auto lat = m_io_grid->create_geometry_data("lat",m_io_grid->get_2d_scalar_layout(),nondim);
   auto lon = m_io_grid->create_geometry_data("lon",m_io_grid->get_2d_scalar_layout(),nondim);
 
+  std::vector<Field> latlon = {lat,lon};
+
   // Read from file
-  AtmosphereInput file_reader(m_filename, m_io_grid, {lat,lon});
+  AtmosphereInput file_reader(m_filename, m_io_grid, latlon);
   file_reader.read_variables();
   file_reader.finalize();
 
@@ -102,25 +131,24 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
 
   // Find processor with closest lat/lon match
   const auto my_rank = m_comm.rank();
-  std::pair<Real, int> min_dist_and_rank = {minloc.val, my_rank};
-  m_comm.all_reduce<std::pair<Real, int>>(&min_dist_and_rank, 1, MPI_MINLOC);
+  RealInt min_dist_and_rank = {minloc.val, my_rank};
+  m_comm.all_reduce(&min_dist_and_rank, 1, MPI_MINLOC);
 
   // Set local col idx to -1 for mpi ranks not containing minimum lat/lon distance
-  m_closest_col_info.mpi_rank = min_dist_and_rank.second;
-  m_closest_col_info.col_lid  = my_rank==min_dist_and_rank.second ? minloc.loc : -1;
+  m_closest_col_info.mpi_rank = min_dist_and_rank.idx;
+  m_closest_col_info.col_lid  = my_rank==min_dist_and_rank.idx ? minloc.loc : -1;
 }
 
 void SCMInput::read_variables (const int time_index)
 {
   auto func_start = std::chrono::steady_clock::now();
   auto fname = [](const Field& f) { return f.name(); };
-  if (m_atm_logger) {
-    m_atm_logger->info("[EAMxx::scorpio_scm_input] Reading variables from file");
-    m_atm_logger->info("  file name: " + m_filename);
-    m_atm_logger->info("  var names: " + ekat::join(m_fields,fname,", "));
-    if (time_index!=-1) {
-      m_atm_logger->info("  time idx : " + std::to_string(time_index));
-    }
+
+  m_atm_logger->info("[EAMxx::scorpio_scm_input] Reading variables from file");
+  m_atm_logger->info("  file name: " + m_filename);
+  m_atm_logger->info("  var names: " + ekat::join(m_fields,fname,", "));
+  if (time_index!=-1) {
+    m_atm_logger->info("  time idx : " + std::to_string(time_index));
   }
 
   // MPI rank with closest column index store column data

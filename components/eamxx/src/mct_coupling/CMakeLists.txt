@@ -20,11 +20,11 @@ if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
 endif()
 
 set(ATM_SRC
-  scream_cxx_f90_interface.cpp
+  eamxx_cxx_f90_interface.cpp
   atm_comp_mct.F90
   ekat_string_utils.F90
-  scream_f2c_mod.F90
-  scream_cpl_indices.F90
+  eamxx_f2c_mod.F90
+  eamxx_cpl_indices.F90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
 )
 
@@ -38,10 +38,17 @@ set (SCREAM_LIBS
      eamxx_cosp
      cld_fraction
      spa
+     iop_forcing
      nudging
      diagnostics
      tms
-)
+     )
+
+# ZM is not always on yet
+if (TARGET zm)
+  list(APPEND SCREAM_LIBS zm)
+endif()
+
 if (SCREAM_ENABLE_ML_CORRECTION)
   list (APPEND SCREAM_LIBS ml_correction)
 endif ()

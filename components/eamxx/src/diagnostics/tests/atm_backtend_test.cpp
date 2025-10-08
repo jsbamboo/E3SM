@@ -1,9 +1,9 @@
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
@@ -13,10 +13,10 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"Point Grid"});
-  auto &pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names", vos_t{"point_grid"});
+  auto &pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
+  pl.set("aliases", vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -41,7 +41,7 @@ TEST_CASE("atm_backtend") {
   const int ngcols    = 2 * comm.size();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
 
   // Input (randomized) qc
   FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
@@ -63,9 +63,7 @@ TEST_CASE("atm_backtend") {
 
   ekat::ParameterList params;
   REQUIRE_THROWS(diag_factory.create("AtmBackTendDiag", comm,
-                                     params));  // No 'Tendency Name'
-
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
+                                     params));  // No 'tendency_name'
 
   // Set time for qc and randomize its values
   qc.get_header().get_tracking().update_time_stamp(t0);
@@ -73,7 +71,7 @@ TEST_CASE("atm_backtend") {
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
-  params.set<std::string>("Tendency Name", "qc");
+  params.set<std::string>("tendency_name", "qc");
   auto diag = diag_factory.create("AtmBackTendDiag", comm, params);
   diag->set_grids(gm);
   diag->set_required_field(qc);
@@ -83,9 +81,9 @@ TEST_CASE("atm_backtend") {
   diag->compute_diagnostic();
   auto diag_f = diag->get_diagnostic();
 
-  // Check result: diag should be filled with var_fill_value
+  // Check result: diag should be filled with fill_value
   auto some_field = qc.clone();
-  some_field.deep_copy(var_fill_value);
+  some_field.deep_copy(constants::fill_value<Real>);
   REQUIRE(views_are_equal(diag_f, some_field));
 
   const Real a_day = 24.0 * 60.0 * 60.0;  // seconds

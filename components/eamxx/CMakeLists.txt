@@ -51,8 +51,10 @@ if (SCREAM_CIME_BUILD)
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
-# We want to use C++17 in EAMxx
-set(CMAKE_CXX_STANDARD 17)
+if (NOT CMAKE_CXX_STANDARD)
+  # Default to C++17 in EAMxx
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX C Fortran)
@@ -68,23 +70,25 @@ else()
 endif()
 
 ####################################################################
-#                  Kokkos/YAKL-related settings                    #
+#                  Kokkos related settings                         #
 ####################################################################
 
+# Note: this only does anything for standalone eamxx. CIME cases will
+# use the sharedlib EKAT/kokkos
 if (Kokkos_ENABLE_CUDA)
   if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
     if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
       string (CONCAT msg
-          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON, and Kokkos_ENALBE_DEBUG_BOUNDS_CHECK=ON.\n"
+          "Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=ON, and Kokkos_ENABLE_DEBUG_BOUNDS_CHECK=ON.\n"
           "   -> Disabling bounds checks, to prevent internal compiler errors.")
       message(WARNING "${msg}")
-      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+      set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
     else()
       string (CONCAT msg
-          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON.\n"
+          "Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=ON.\n"
           "   -> Disabling bounds checks, to prevent internal compiler errors.")
       message(STATUS "${msg}")
-      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+      set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
     endif()
   endif()
 endif()
@@ -95,23 +99,25 @@ endif()
 option (Kokkos_ENABLE_SERIAL "" ON)
 
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
-set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
-set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 
 # Determine if this is a Cuda build.
 if (Kokkos_ENABLE_CUDA)
   # Add CUDA as a language for CUDA builds
   enable_language(CUDA)
   set (EAMXX_ENABLE_GPU TRUE  CACHE BOOL "" FORCE)
-  set (CUDA_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
-# Determine if this is a Cuda build.
+# Determine if this is a HIP build.
 if (Kokkos_ENABLE_HIP)
   # Add CUDA as a language for CUDA builds
   enable_language(HIP)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
-  set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
+endif ()
+
+# Determine if this is a sycl build.
+if (Kokkos_ENABLE_SYCL)
+  #enable_language(SYCL)
+  set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
 endif ()
 
 if( NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" )
@@ -178,7 +184,7 @@ elseif(MACH)
 endif()
 
 set(DEFAULT_SMALL_KERNELS FALSE)
-if (Kokkos_ENABLE_HIP)
+if (Kokkos_ENABLE_HIP OR Kokkos_ENABLE_SYCL)
   set(DEFAULT_SMALL_KERNELS TRUE)
 endif()
 
@@ -198,30 +204,19 @@ set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C inst
 set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
 option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
 option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
+
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for ALL components that support them")
 set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for P3 only")
 set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for SHOC only")
-if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_SHOC_SMALL_KERNELS)
-  set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
-endif()
 
 # Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via
 #     option (RRTMGP_EXPENSIVE_CHECKS "Turn on internal RRTMGP error checking" ${SCREAM_DEBUG})
-# and then adding to scream_config.h:
+# and then adding to eamxx_config.h:
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
-
-option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" TRUE)
-option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" FALSE)
-if (SCREAM_RRTMGP_ENABLE_YAKL)
-  add_definitions("-DRRTMGP_ENABLE_YAKL")
-endif()
-
-if (SCREAM_RRTMGP_ENABLE_KOKKOS)
-  add_definitions("-DRRTMGP_ENABLE_KOKKOS")
-endif()
-
+# This can be removed once rrtmgp is kokkos-only.
+add_definitions("-DRRTMGP_ENABLE_KOKKOS")
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
@@ -242,9 +237,6 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 # Whether to use XYZ as a method to detect memory usage.
 option (SCREAM_ENABLE_GETRUSAGE "Whether getrusage can be used to get memory usage." OFF)
 option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory usage." OFF)
-
-# Whether to disable warnings from tpls.
-set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
 # Dycore settings
 set(DEFAULT_SCREAM_DYNAMICS_DYCORE "NONE")
@@ -274,11 +266,7 @@ set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
-option (EAMXX_ENABLE_PYSCREAM "Whether to enable python interface to eamxx" OFF)
-if (EAMXX_ENABLE_PYSCREAM)
-  # Pybind11 requires shared libraries
-  set (BUILD_SHARED_LIBS ON)
-endif()
+option (EAMXX_ENABLE_PYTHON "Whether to enable interfaces to python via pybind11" OFF)
 
 ####################################################################
 #                    Packs-related settings                        #
@@ -319,11 +307,22 @@ check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no
 
 # Handle input root
 if (SCREAM_MACHINE AND NOT SCREAM_INPUT_ROOT)
+  if (SCREAM_CIME_BUILD)
+    # Use xmlquery
+    execute_process(COMMAND ./xmlquery DIN_LOC_ROOT --value
+      WORKING_DIRECTORY ${CASEROOT}
+      RESULT_VARIABLE QC_STATUS
+      OUTPUT_VARIABLE QC_OUTPUT
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+  else()
+    # There's no case to work with so we have to use query-cime
     execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/query-cime ${SCREAM_MACHINE} DIN_LOC_ROOT
     RESULT_VARIABLE QC_STATUS
     OUTPUT_VARIABLE QC_OUTPUT
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+  endif()
   if (QC_STATUS EQUAL 0)
     set(DEFAULT_SCREAM_INPUT_ROOT ${QC_OUTPUT})
   endif()
@@ -401,7 +400,7 @@ if (NOT SCREAM_LIB_ONLY)
 
   # All baselines tests will add a line to the baseline_list file,
   # specifyiing the full name of the baseline they generated.
-  # When test-all-scream has to generate new baselines, it will run
+  # When test-all-eamxx has to generate new baselines, it will run
   # ctest -L baseline_gen, and then read this file to find out all the
   # baseline files to copy into the baseline directory
   set (SCREAM_TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
@@ -453,10 +452,6 @@ if (NOT SCREAM_LIB_ONLY)
   # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
   if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND OR EKAT_ENABLE_COMPUTE_SANITIZER)
     set (SCREAM_TEST_SIZE_DEFAULT SHORT)
-    # also set thread_ing=$max_thread - 1, so we test at most 2 threading configurations
-    if (SCREAM_TEST_MAX_THREADS GREATER 1)
-      math (EXPR SCREAM_TEST_THREAD_INC ${SCREAM_TEST_MAX_THREADS}-1)
-    endif()
   else()
     set (SCREAM_TEST_SIZE_DEFAULT MEDIUM)
   endif()
@@ -475,6 +470,8 @@ endif()
 ####################################################################
 #               Configure all tpls and subfolders                  #
 ####################################################################
+
+set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
 
 if (DEFINED ENV{SCREAM_FAKE_ONLY})
   # We don't really need to build ekat, but we do need to configure the test-launcher
@@ -500,8 +497,6 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
     set (TEST_LAUNCHER_ON_GPU False)
   endif()
 
-  set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
-
   if (EKAT_ENABLE_MPI)
     find_package(MPI REQUIRED COMPONENTS C)
 
@@ -525,16 +520,39 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
                  ${CMAKE_BINARY_DIR}/bin/test-launcher)
 
   if (EKAT_ENABLE_VALGRIND)
-    add_subdirectory(${EKAT_SOURCE_DIR}/valgrind_support
-                     ${CMAKE_BINARY_DIR}/externals/ekat/valgrind_support)
+    # We need to add the whole ekat, since ekat::CatchMain depends on ekat::Core
+    # But don't worry, by default, all ekat's optional packages are DISABLED
+    add_subdirectory(${EKAT_SOURCE_DIR}
+                     ${CMAKE_BINARY_DIR}/externals/ekat)
   endif()
 
 else()
-  include(EkatBuildEkat)
-  BuildEkat(PREFIX "SCREAM"
-    ENABLE_TESTS OFF
-    ENABLE_FPE   ON
-    ENABLE_FPE_DEFAULT_MASK OFF)
+  # Enable all EKAT packages
+  set(EKAT_ENABLE_ALL_PACKAGES ON)
+  set(EKAT_DISABLE_TPL_WARNINGS ON)
+
+  # Disable tests by default (user can override via -D EKAT_ENABLE_TESTS=ON)
+  set (EKAT_ENABLE_TESTS OFF)
+
+  # Ensure testing options are consistent with EAMxx settings (threads, ranks, packs, etc)
+  set (EKAT_TEST_MAX_THREADS ${SCREAM_TEST_MAX_THREADS} CACHE STRING "Max number of threads for tests")
+  set (EKAT_TEST_THREAD_INC ${SCREAM_TEST_THREAD_INC} CACHE STRING "Thread count increment for threaded tests")
+  set (EKAT_TEST_MAX_RANKS ${SCREAM_TEST_MAX_RANKS} CACHE STRING "Max number of ranks for tests")
+  set (EKAT_TEST_PACK_SIZE ${SCREAM_PACK_SIZE} CACHE STRING
+    " The number of scalars in a pack::Pack and Mask. Larger packs have good performance on conditional-free loops due to improved caching.")
+
+  if (SCREAM_DOUBLE_PRECISION)
+    set (EKAT_TEST_SINGLE_PRECISION OFF)
+    set (EKAT_TEST_DOUBLE_PRECISION ON)
+  else()
+    set (EKAT_TEST_SINGLE_PRECISION ON)
+    set (EKAT_TEST_DOUBLE_PRECISION OFF)
+  endif()
+
+  # We will use the sharedlib one if CIME
+  if (NOT SCREAM_CIME_BUILD)
+    add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
+  endif()
 endif()
 
 # Set compiler-specific flags
@@ -554,16 +572,20 @@ if (SCREAM_DOUBLE_PRECISION)
     set(SCREAM_Fortran_FLAGS -real-size 64)
   elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Cray")
     set(SCREAM_Fortran_FLAGS -s default32 -eZ)
-  else()
+  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
+    #set(SCREAM_Fortran_FLAGS -real-size=8 -double-size=8) # these are nvidia flags, but dont need, already supports IEEE 754 floating-point standard
+  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
+  else() # default, currently same as GNU
     set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()
 
 # This must be done using add_definitions because it is used to determine
-# whether to include scream_config.h.
+# whether to include eamxx_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
-# Hooks for testing test-all-scream within test-scripts
+# Hooks for testing test-all-eamxx within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
 endif()
@@ -581,21 +603,6 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   if (NOT SCREAM_LIB_ONLY)
     add_subdirectory(tests)
   endif()
-
-  # Generate scream_config.h and scream_config.f
-  include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-
-  # Build any tools in the scripts/ dir.
-  add_subdirectory(scripts)
-
-  # Generate scream_config.h and scream_config.f
-  include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder
@@ -616,8 +623,6 @@ function (print_var var)
 endfunction ()
 
 print_var(EAMXX_ENABLE_GPU)
-print_var(CUDA_BUILD)
-print_var(HIP_BUILD)
 print_var(SCREAM_MACHINE)
 print_var(SCREAM_DYNAMICS_DYCORE)
 print_var(SCREAM_DOUBLE_PRECISION)

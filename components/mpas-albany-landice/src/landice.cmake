@@ -47,11 +47,13 @@ list(APPEND RAW_SOURCES
   core_landice/shared/mpas_li_setup.F
   core_landice/shared/mpas_li_mesh.F
   core_landice/shared/mpas_li_config.F
+  core_landice/shared/mpas_li_time_average_coupled.F
 )
 
 # analysis members
 list(APPEND RAW_SOURCES
   core_landice/analysis_members/mpas_li_analysis_driver.F
+  core_landice/analysis_members/mpas_li_flux_gates.F
   core_landice/analysis_members/mpas_li_global_stats.F
   core_landice/analysis_members/mpas_li_regional_stats.F
 )
@@ -76,6 +78,7 @@ list(APPEND RAW_SOURCES
   core_landice/mode_forward/mpas_li_velocity_external.F
   core_landice/mode_forward/mpas_li_subglacial_hydro.F
   core_landice/mode_forward/mpas_li_bedtopo.F
+  core_landice/mode_forward/mpas_li_ocean_extrap.F
 )
 
 if (CPPDEFS MATCHES ".*MPAS_LI_BUILD_INTERFACE.*")

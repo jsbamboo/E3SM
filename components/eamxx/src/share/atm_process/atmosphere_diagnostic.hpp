@@ -44,7 +44,7 @@ public:
   // by default. Derived classes can, of course, override this.
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert("Physics");
+    s.insert("physics");
     return s;
   }
 
@@ -75,6 +75,9 @@ protected:
 
   // Diagnostics are meant to return a field
   Field m_diagnostic_output;
+
+  // Timestamp of the last diag evaluation
+  util::TimeStamp m_last_eval_ts;
 };
 
 // A short name for the factory for atmosphere diagnostics
@@ -94,9 +97,7 @@ using AtmosphereDiagnosticFactory =
 template <typename AtmDiagType>
 inline std::shared_ptr<AtmosphereDiagnostic>
 create_atmosphere_diagnostic (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmDiagType>(comm,p);
-  ptr->setSelfPointer(ptr);
-  return ptr;
+  return std::make_shared<AtmDiagType>(comm,p);
 }
 } //namespace scream
 

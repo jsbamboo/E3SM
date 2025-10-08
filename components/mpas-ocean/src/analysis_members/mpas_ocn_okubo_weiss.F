@@ -30,7 +30,6 @@ module ocn_okubo_weiss
    use ocn_config
    use ocn_diagnostics_variables
    use mpas_matrix_operations
-   use iso_c_binding
 
    implicit none
    private
@@ -70,6 +69,7 @@ module ocn_okubo_weiss
 
    interface
       subroutine qsort(array, elem_count, elem_size, compare) bind(C, name="qsort")!{{{
+         use iso_c_binding, only: c_ptr, c_size_t, c_funptr
          import
          type(c_ptr), value       :: array
          integer(c_size_t), value :: elem_count
@@ -946,8 +946,8 @@ contains
 
       ! for lat/lon coordinates, convert from radians to degrees for output
       if (config_AM_okuboWeiss_use_lat_lon_coords) then
-         wsPosX = wsPosX *180.0_RKIND/pii
-         wsPosY = wsPosY *180.0_RKIND/pii
+         wsPosX = wsPosX *180.0_RKIND/pi
+         wsPosY = wsPosY *180.0_RKIND/pi
       end if
 
       call mpas_timer_stop("stats per proc")

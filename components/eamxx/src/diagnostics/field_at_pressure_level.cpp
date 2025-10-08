@@ -1,9 +1,9 @@
 #include "diagnostics/field_at_pressure_level.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_upper_bound.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_upper_bound.hpp>
+#include <ekat_units.hpp>
 
 namespace scream
 {
@@ -15,30 +15,22 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
 {
   m_field_name = m_params.get<std::string>("field_name");
 
-  // Figure out the pressure value
-  const auto& location = m_params.get<std::string>("vertical_location");
-  auto chars_start = location.find_first_not_of("0123456789.");
-  EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
-      "Error! Invalid string for pressure value for FieldAtPressureLevel.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nxyz, with N integer, and xyz='mb', 'hPa', or 'Pa'\n");
-  const auto press_str = location.substr(0,chars_start);
-  m_pressure_level = std::stod(press_str);
-
-  const auto units = location.substr(chars_start);
+  const auto units = m_params.get<std::string>("pressure_units");
   EKAT_REQUIRE_MSG (units=="mb" or units=="hPa" or units=="Pa",
-      "Error! Invalid string for pressure value for FieldAtPressureLevel.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nxyz, with N integer, and xyz='mb', 'hPa', or 'Pa'\n");
+      "Error! Invalid units for FieldAtPressureLevel.\n"
+      " - input units: " + units + "\n"
+      " - valid units: 'mb', 'hPa', 'Pa'\n");
 
-  // Convert pressure level to Pa, the units of pressure in the simulation
+  // Figure out the pressure value, and convert to Pa if needed
+  auto p_value = m_params.get<std::string>("pressure_value");
+
   if (units=="mb" || units=="hPa") {
-    m_pressure_level *= 100;
+    m_pressure_level = std::stod(p_value)*100;
+  } else {
+    m_pressure_level = std::stod(p_value);
   }
 
-  m_mask_val = m_params.get<double>("mask_value",Real(constants::DefaultFillValue<float>::value));
-
-  m_diag_name = m_field_name + "_at_" + location;
+  m_diag_name = m_field_name + "_at_" + p_value + units;
 }
 
 void FieldAtPressureLevel::
@@ -64,7 +56,9 @@ initialize_impl (const RunType /*run_type*/)
   EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=3,
       "Error! Field rank not supported by FieldAtPressureLevel.\n"
       " - field name: " + fid.name() + "\n"
-      " - field layout: " + layout.to_string() + "\n");
+      " - field layout: " + layout.to_string() + "\n"
+      "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
+      "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
@@ -92,13 +86,13 @@ initialize_impl (const RunType /*run_type*/)
   auto nondim = ekat::units::Units::nondimensional();
   const auto& gname = fid.get_grid_name();
 
-  std::string mask_name = name() + " mask";
+  std::string mask_name = m_diag_name + " mask";
   FieldLayout mask_layout( {COL}, {num_cols});
   FieldIdentifier mask_fid (mask_name,mask_layout, nondim, gname);
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
-  m_diagnostic_output.get_header().set_extra_data("mask_data",diag_mask);
-  m_diagnostic_output.get_header().set_extra_data("mask_value",m_mask_val);
+  m_diagnostic_output.get_header().set_extra_data("mask_field",diag_mask);
+  m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
@@ -130,11 +124,11 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   const int nlevs = pl.dim(1);
 
   auto p_tgt = m_pressure_level;
-  auto mval = m_mask_val;
+  constexpr auto fval = constants::fill_value<Real>;
   if (rank==2) {
     auto policy = KT::RangePolicy(0,ncols);
     auto diag = m_diagnostic_output.get_view<Real*>();
-    auto mask = m_diagnostic_output.get_header().get_extra_data<Field>("mask_data").get_view<Real*>();
+    auto mask = m_diagnostic_output.get_header().get_extra_data<Field>("mask_field").get_view<Real*>();
     auto f_v  = f.get_view<const Real**>();
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int icol) {
       auto x1 = ekat::subview(p_src_v,icol);
@@ -143,14 +137,14 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       auto end = beg + nlevs;
       auto last = beg + (nlevs-1);
       if (p_tgt<*beg or p_tgt>*last) {
-        diag(icol) = mval;
+        diag(icol) = fval;
         mask(icol) = 0;
       } else {
         auto ub = ekat::upper_bound(beg,end,p_tgt);     
         auto k1 = ub - beg;
         if (k1==0) {
           // Corner case: p_tgt==y1(0)
-          diag(icol) = y1(icol);
+          diag(icol) = y1(0);
         } else if (k1==nlevs) {
           // Corner case: p_tgt==y1(nlevs-1)
           diag(icol) = y1(nlevs-1);
@@ -165,7 +159,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
     const int ndims = f.get_header().get_identifier().get_layout().get_vector_dim();
     auto policy = KT::TeamPolicy(ncols,ndims);
     auto diag = m_diagnostic_output.get_view<Real**>();
-    auto mask = m_diagnostic_output.get_header().get_extra_data<Field>("mask_data").get_view<Real*>();
+    auto mask = m_diagnostic_output.get_header().get_extra_data<Field>("mask_field").get_view<Real*>();
     auto f_v  = f.get_view<const Real***>();
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const MemberType& team) {
       int icol = team.league_rank();
@@ -175,7 +169,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       auto last = beg + (nlevs-1);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),[&](const int idim) {
         if (p_tgt<*beg or p_tgt>*last) {
-          diag(icol,idim) = mval;
+          diag(icol,idim) = fval;
           Kokkos::single(Kokkos::PerTeam(team),[&]{
             mask(icol) = 0;
           });
@@ -185,7 +179,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
           auto k1 = ub - beg;
           if (k1==0) {
             // Corner case: p_tgt==y1(0)
-            diag(icol,idim) = y1(icol);
+            diag(icol,idim) = y1(0);
           } else if (k1==nlevs) {
             // Corner case: p_tgt==y1(nlevs-1)
             diag(icol,idim) = y1(nlevs-1);

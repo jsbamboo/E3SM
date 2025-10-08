@@ -14,14 +14,9 @@ MACRO(PREQX_KOKKOS_SETUP)
   SET(TRILINOS_ZOLTAN_DIR   ${HOMME_SOURCE_DIR}/src/zoltan)
   SET(TEST_SRC_DIR          ${HOMME_SOURCE_DIR}/src/test_src)
 
-  SET(UTILS_TIMING_SRC_DIR  ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
-  SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
-
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
     ${TARGET_DIR}/cxx
-    ${UTILS_TIMING_DIR}
-    ${UTILS_TIMING_SRC_DIR}
     ${PREQX_SHARE_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${HOMME_BINARY_DIR}/src/share/cxx
@@ -115,7 +110,7 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${TEST_SRC_DIR}/dcmip12_wrapper.F90
     ${TEST_SRC_DIR}/dcmip16_wrapper.F90
     ${TEST_SRC_DIR}/dcmip2012_test1_2_3.F90
-    ${TEST_SRC_DIR}/dcmip2012_test1_conv.F90
+    ${TEST_SRC_DIR}/dcmip2012_test1_conv_mod.F90
     ${TEST_SRC_DIR}/dcmip2012_test4.F90
     ${TEST_SRC_DIR}/dcmip2012_test5.F90
     ${TEST_SRC_DIR}/dcmip2016-baroclinic.F90

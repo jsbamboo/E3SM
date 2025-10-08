@@ -2,7 +2,9 @@ name: gh
 
 on:
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - maint-3.0
     paths:
       # first, yes to these
       - '.github/workflows/e3sm-gh-ci-cime-tests.yml'
@@ -22,10 +24,14 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
 
   ci:
-    if: false
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -35,22 +41,24 @@ jobs:
           - ERS_Ld5_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu.eam-wcprod_F2010
           - SMS_D_Ln5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu
           - ERS_Ld5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.eamxx-prod
-    container: 
-      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.1.0
+          - ERS_P4.ne4pg2_oQU480.A.ghci-oci_gnu
+          - ERS_P4.ne4pg2_oQU480.I1850ELMCN.ghci-oci_gnu.elm-qian_1948
+    container:
+      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1
 
     steps:
-      - 
+      -
         name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           show-progress: false
           submodules: recursive
-      - 
+      -
         name: CIME
         working-directory: cime/scripts
         run: |
           ./create_test ${{ matrix.test }} --wait --debug
-      - 
+      -
         name: Artifacts
         uses: actions/upload-artifact@v4
         if: ${{ always() }}

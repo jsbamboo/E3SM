@@ -3,9 +3,10 @@
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
+
 namespace scream {
 
 std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
@@ -14,10 +15,10 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"Point Grid"});
-  auto &pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names", vos_t{"point_grid"});
+  auto &pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
+  pl.set("aliases", vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -30,8 +31,6 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 TEST_CASE("aodvis") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
   Real some_limit = 0.0025;
 
@@ -51,7 +50,7 @@ TEST_CASE("aodvis") {
   int swvis = eamxx_vis_swband_idx();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
 
   // Input (randomized) tau
   FieldLayout scalar3d_swband_layout =
@@ -63,7 +62,7 @@ TEST_CASE("aodvis") {
   tau.get_header().get_tracking().update_time_stamp(t0);
   // Input (randomized) sunlit
   FieldLayout scalar2d_layout = grid->get_2d_scalar_layout();
-  FieldIdentifier sunlit_fid("sunlit", scalar2d_layout, nondim, grid->name());
+  FieldIdentifier sunlit_fid("sunlit_mask", scalar2d_layout, nondim, grid->name());
   Field sunlit(sunlit_fid);
   sunlit.allocate_view();
   sunlit.get_header().get_tracking().update_time_stamp(t0);
@@ -113,15 +112,16 @@ TEST_CASE("aodvis") {
 
     const auto tau_h  = tau.get_view<const Real ***, Host>();
     const auto aod_hf = diag->get_diagnostic();
+    const auto aod_mask = aod_hf.get_header().get_extra_data<Field>("mask_field");
 
     Field aod_tf = diag->get_diagnostic().clone();
-    aod_tf.deep_copy<double, Host>(0.0);
     auto aod_t = aod_tf.get_view<Real *, Host>();
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       if(sun_h(icol) < some_limit) {
-        aod_t(icol) = var_fill_value;
+        aod_t(icol) = constants::fill_value<Real>;
       } else {
+        aod_t(icol) = 0;
         for(int ilev = 0; ilev < nlevs; ++ilev) {
           aod_t(icol) += tau_h(icol, swvis, ilev);
         }
@@ -134,6 +134,8 @@ TEST_CASE("aodvis") {
     if(SCREAM_BFB_TESTING) {
       REQUIRE(views_are_equal(aod_hf, aod_tf));
     }
+    // Ensure the masks are identical (should be pointing exactly to each other)
+    REQUIRE(views_are_equal(aod_mask, sunlit));
   }
 }
 

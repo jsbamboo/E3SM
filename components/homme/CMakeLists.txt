@@ -206,7 +206,9 @@ IF (HOMME_USE_KOKKOS)
 
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
 
-  IF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "HIP")
+  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SYCL")
+    SET (HOMMEXX_SYCL_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
     SET (HOMMEXX_HIP_SPACE ON)
   ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "CUDA")
     SET (HOMMEXX_CUDA_SPACE ON)
@@ -254,9 +256,22 @@ elseif (NOT TARGET csm_share)
   message (FATAL_ERROR "Aborting.")
 endif()
 
-OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
+OPTION(HOMME_USE_MKL "Whether to use Intel's MKL/oneMKL instead of blas/lapack" FALSE)
 IF(HOMME_USE_MKL)
-  MESSAGE(STATUS "HOMME_USE_MKL is ON. The flag -mkl will be added to each executable/library.")
+  IF(DEFINED ENV{MKLROOT})
+    SET(MKL_ROOT_PATH "$ENV{MKLROOT}")
+    IF(MKL_ROOT_PATH MATCHES "oneapi/mkl")
+      SET(MKL_TYPE "oneMKL")
+      MESSAGE(STATUS "Detected oneMKL based on MKLROOT: ${MKL_ROOT_PATH}")
+      FIND_PACKAGE(MKL REQUIRED $ENV{MKLROOT}/lib/cmake/mkl)
+    ELSE()
+      SET(MKL_TYPE "Intel MKL")
+      MESSAGE(STATUS "Detected standalone Intel MKL based on MKLROOT: ${MKL_ROOT_PATH}")
+    ENDIF()
+  ELSE()
+    MESSAGE(FATAL_ERROR "MKLROOT environment variable is not set. Please set it to your MKL installation path.")
+  ENDIF()
+  MESSAGE(STATUS "HOMME_USE_MKL is ON. The flag -mkl/-qmkl will be added to each executable/library.")
 ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
@@ -299,20 +314,23 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 SET (HOMMEXX_ENABLE_GPU FALSE)
-SET (HOMMEXX_ENABLE_GPU_F90 FALSE) 
+SET (HOMMEXX_ENABLE_GPU_F90 FALSE)
 
 IF (HOMME_USE_KOKKOS)
 
-  IF (CUDA_BUILD OR HIP_BUILD)
+  IF (Kokkos_ENABLE_CUDA OR Kokkos_ENABLE_HIP OR Kokkos_ENABLE_SYCL)
     SET (DEFAULT_VECTOR_SIZE 1)
     SET (HOMMEXX_ENABLE_GPU TRUE)
-    SET (HOMMEXX_ENABLE_GPU_F90 TRUE) 
+    SET (HOMMEXX_ENABLE_GPU_F90 TRUE)
+    IF (Kokkos_ENABLE_SYCL)
+      SET (DISABLE_TIMERS_IN_FIRST_STEP TRUE)
+    ENDIF()
   ELSE ()
     SET (DEFAULT_VECTOR_SIZE 8)
   ENDIF()
 
   SET (HOMMEXX_VECTOR_SIZE ${DEFAULT_VECTOR_SIZE} CACHE STRING
-	  "If AVX or Cuda or HIP don't take priority, use this software vector size.")
+	  "If AVX or Cuda or HIP or SYCL don't take priority, use this software vector size.")
 
   IF (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")
     SET (HOMMEXX_DEBUG ON)
@@ -347,20 +365,28 @@ IF (DEFINED SUNDIALS_DIR)
   INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
-###########################################
-# Definitions for timing library
-###########################################
-# This is required in timing to set HAVE_MPI
-ADD_DEFINITIONS(-DSPMD)
-OPTION(ENABLE_NANOTIMERS "Use nano timers in timing library" FALSE)
-OPTION(USE_BIT64 "Set BIT64 (for 64 bit arch) in timing library when ENABLE_NANOTIME" FALSE)
-IF (${ENABLE_NANOTIMERS})
-  ADD_DEFINITIONS(-DHAVE_NANOTIME)
-  IF (${USE_BIT64})
-    ADD_DEFINITIONS(-DBIT64)
+if (HOMME_STANDALONE OR NOT TARGET gptl)
+  ###########################################
+  # Definitions for timing library
+  ###########################################
+  # This is required in timing to set HAVE_MPI
+  ADD_DEFINITIONS(-DSPMD)
+  OPTION(ENABLE_NANOTIMERS "Use nano timers in timing library" FALSE)
+  OPTION(USE_BIT64 "Set BIT64 (for 64 bit arch) in timing library when ENABLE_NANOTIME" FALSE)
+  IF (${ENABLE_NANOTIMERS})
+    ADD_DEFINITIONS(-DHAVE_NANOTIME)
+    IF (${USE_BIT64})
+      ADD_DEFINITIONS(-DBIT64)
+    ENDIF ()
   ENDIF ()
-ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
+  ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
+  target_include_directories (timing PUBLIC utils/cime/CIME/non_py/src/timing)
+  target_include_directories (timing PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
+else ()
+  # EAMxx already takes care of making the gptl target available, so just make the timing tgt point to that
+  add_library(timing INTERFACE)
+  target_link_libraries (timing INTERFACE gptl)
+endif()
 
 
 # CMAKE_CURRENT_SOURCE_DIR == homme
@@ -391,16 +417,15 @@ if (HOMME_BUILD_SCORPIO)
   message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
   message("** Configuring SCORPIO")
   # pio needs cime/externals/genf90/genf90.pl
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
   if (HOMME_USE_SCORPIO)
     # Need to use scorpio's older genf90 for now
-    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
     SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
     ADD_SUBDIRECTORY(utils/externals/scorpio)
     SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/src/flib")
   else ()
     # The default I/O library used in "Scorpio classic"
     ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
-    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
     SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/pio")
   endif ()
   INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})

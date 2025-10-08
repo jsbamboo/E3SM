@@ -142,8 +142,11 @@ ADD_CUSTOM_TARGET(test-execs)
 ADD_CUSTOM_TARGET(check 
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
+if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 # Force cprnc to be built when make check is run
 ADD_DEPENDENCIES(check cprnc)
+endif()
+
 
 # Create a target for making the reference data
 ADD_CUSTOM_TARGET(baseline
@@ -192,9 +195,6 @@ IF(${BUILD_HOMME_PREQX})
   IF(${BUILD_HOMME_PREQX_ACC})
     ADD_SUBDIRECTORY(baroCam-acc)
   ENDIF()
-  IF(${HOMME_ENABLE_COMPOSE})
-    ADD_SUBDIRECTORY(stt)
-  ENDIF()
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -219,6 +219,8 @@ IF(${BUILD_HOMME_THETA})
 #  ADD_SUBDIRECTORY(theta-l-nlev200-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev256-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev300-native)
+  # Special test for -DHOMME_WITHOUT_PIOLIBRARY.
+  ADD_SUBDIRECTORY(stt)
 ENDIF()
 
 IF (${BUILD_HOMME_THETA_KOKKOS})

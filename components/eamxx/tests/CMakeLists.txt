@@ -1,5 +1,21 @@
 include (ScreamUtils)
 
+set (EAMXX_AD_TEST_CPP ${CMAKE_CURRENT_LIST_DIR}/eamxx_ad_test.cpp)
+
+# Shortcut utils to create a unit test that uses the atm driver
+# These functions call the equivalent ones in ScreamUtils with some hardcoded libs/sources
+function(CreateADUnitTestExec exec_name)
+  CreateUnitTestExec("${exec_name}" "${EAMXX_AD_TEST_CPP}"
+    LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTestExec)
+
+function(CreateADUnitTest test_name)
+  CreateUnitTest("${test_name}" "${EAMXX_AD_TEST_CPP}"
+    LABELS driver LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTest)
+
+###############################################################################
+
 # This function compares an output file created by an AD-driven test with its
 # corresponding one in the baselines dir. The inputs (all REQUIRED) are
 #
@@ -26,7 +42,7 @@ function (CreateBaselineTest TEST_BASE_NAME GEN_TEST_NRANKS OUT_FILE FIXTURES_BA
     LABELS baseline_cmp
     FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_END}_omp1)
 
-  # Add the test that generated the baseline to the baseline_gen label, so scripts/test-all-scream
+  # Add the test that generated the baseline to the baseline_gen label, so scripts/test-all-eamxx
   # can run it when it has to generate baselines
   if (TEST ${TEST_BASE_NAME}_np${GEN_TEST_NRANKS})
     set (GEN_TEST_FULL_NAME ${TEST_BASE_NAME}_np${GEN_TEST_NRANKS})
@@ -42,7 +58,7 @@ function (CreateBaselineTest TEST_BASE_NAME GEN_TEST_NRANKS OUT_FILE FIXTURES_BA
   endif()
   set_tests_properties (${GEN_TEST_FULL_NAME} PROPERTIES LABELS baseline_gen)
 
-  # test-all-scream will read this file to get the list of baseline nc files to
+  # test-all-eamxx will read this file to get the list of baseline nc files to
   # copy into the baseline dir
   file (APPEND ${SCREAM_TEST_OUTPUT_DIR}/baseline_list
     "${SRC_FILE}\n"

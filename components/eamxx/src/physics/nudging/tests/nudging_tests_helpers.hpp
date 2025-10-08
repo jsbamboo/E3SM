@@ -1,9 +1,9 @@
-#include "share/io/scream_output_manager.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream
 {
@@ -13,7 +13,6 @@ constexpr int nlevs_data   = 20;
 constexpr int nsteps_data  = 5;
 constexpr int dt_data      = 100;
 constexpr int nlevs_filled = 2;
-constexpr double fill_val  = 1e30;
 
 util::TimeStamp get_t0 () {
   return  util::TimeStamp ({2000,1,1},{12,0,0});
@@ -24,10 +23,10 @@ create_gm (const ekat::Comm& comm, const int ngcols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", ngcols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -55,7 +54,6 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
   FieldIdentifier fid2("horiz_winds",vector3d,m/s,gn);
 
   // Register fields with fm
-  fm->registration_begins();
   fm->register_field(FR(fid1));
   fm->register_field(FR(fid2));
   fm->registration_ends();
@@ -90,27 +88,27 @@ void compute_field (Field f,
     const auto f_h = f.get_view<Real**, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,ilev) = fill_val;
+        f_h(icol,ilev) = constants::fill_value<Real>;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,ilev) = step + (offset+icol)*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,ilev) = fill_val;
+        f_h(icol,ilev) = constants::fill_value<Real>;
       }
     }
   } else {
     const auto f_h = f.get_view<Real***, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = constants::fill_value<Real>;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,0,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
         f_h(icol,1,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = constants::fill_value<Real>;
       }
     }
   }
@@ -147,20 +145,19 @@ create_om (const std::string& filename_prefix,
   // NOTE: ask "real" fp precision, so even when building in double precision
   //       we can retrieve exactly the nudging data (if no remapping happens)
   ekat::ParameterList params;
-  params.set<std::string>("Averaging Type","INSTANT");
+  params.set<std::string>("averaging_type","instant");
   params.set<std::string>("filename_prefix",filename_prefix);
-  params.set<std::string>("Floating Point Precision","real");
-  params.set("MPI Ranks in Filename", false);
-  params.set("Field Names",strvec_t{"p_mid","U","V"});
-  params.set("fill_value",fill_val);
+  params.set<std::string>("floating_point_precision","real");
+  params.set("field_names",strvec_t{"p_mid","U","V"});
 
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   auto om = std::make_shared<OutputManager>();
-  om->setup(comm,params,fm,gm,t0,t0,false);
+  om->initialize(comm,params,t0,false);
+  om->setup(fm,gm->get_grid_names());
   return om;
 }
 

@@ -1,14 +1,13 @@
 #include "share/field/field.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 namespace scream
 {
 
 Field::
 Field (const identifier_type& id)
- : m_header (create_header(id))
 {
-  // Nothing to do here
+  m_header = std::make_shared<FieldHeader>(id);
 }
 
 Field
@@ -34,10 +33,15 @@ Field::alias (const std::string& name) const {
 
 Field
 Field::clone(const std::string& name) const {
+  return clone(name, get_header().get_identifier().get_grid_name());
+}
+
+Field
+Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
   FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      my_fid.get_grid_name(),my_fid.data_type());
+                      grid_name,my_fid.data_type());
   Field f(fid);
 
   // Ensure alloc props match
@@ -59,25 +63,6 @@ Field::clone(const std::string& name) const {
   return f;
 }
 
-void Field::
-sync_to_host () const {
-  // Sanity check
-  EKAT_REQUIRE_MSG (is_allocated(),
-      "Error! Input field must be allocated in order to sync host and device views.\n");
-
-  Kokkos::deep_copy(m_data.h_view,m_data.d_view);
-}
-
-void Field::
-sync_to_dev () const {
-  // Sanity check
-  EKAT_REQUIRE_MSG (is_allocated(),
-      "Error! Input field must be allocated in order to sync host and device views.\n");
-
-  // Ensure host view was created (lazy construction)
-  Kokkos::deep_copy(m_data.d_view,m_data.h_view);
-}
-
 Field Field::
 subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
           const int idim, const int index, const bool dynamic) const {
@@ -92,7 +77,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
         "Error! Subview dimension index must be either 0 or 1.\n");
 
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.get_grid_name());
+  FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.get_grid_name(),id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -100,6 +85,14 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   sf.m_header = create_subfield_header(sf_id,m_header,idim,index,dynamic);
   sf.m_data = m_data;
   sf.m_is_read_only = m_is_read_only;
+
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
+    // If subfield is not contiguous and Host and Device do not
+    // share a memory space, we must initialize the helper field
+    // for sync_to functions.
+    sf.initialize_contiguous_helper_field();
+  }
 
   return sf;
 }
@@ -113,6 +106,12 @@ subfield (const std::string& sf_name, const int idim, const int index, const boo
 Field Field::
 subfield (const int idim, const int index, const bool dynamic) const {
   return subfield(m_header->get_identifier().name(),idim,index,dynamic);
+}
+
+Field Field::
+subfield (const FieldTag tag, const int index, const bool dynamic) const {
+  int idim = get_header().get_identifier().get_layout().dim_idx(tag);
+  return subfield(idim,index,dynamic);
 }
 
 // slice at index idim, extracting the N = (index_end - index_beg) entries
@@ -132,8 +131,9 @@ Field Field::subfield(const std::string& sf_name,
 
   auto sf_layout = lt.clone();
   sf_layout.reset_dim(idim, index_end - index_beg);
+
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name());
+  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -141,6 +141,14 @@ Field Field::subfield(const std::string& sf_name,
   sf.m_header = create_subfield_header(sf_id, m_header, idim, index_beg,
                                        index_end);
   sf.m_data = m_data;
+
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
+    // If subfield is not contiguous and Host and Device do not
+    // share a memory space, we must initialize the helper field
+    // for sync_to functions.
+    sf.initialize_contiguous_helper_field();
+  }
 
   return sf;
 }
@@ -158,7 +166,7 @@ Field Field::subfield(const int idim, const int index_beg,
 }
 
 Field Field::
-get_component (const int i, const bool dynamic) {
+get_component (const int i, const bool dynamic) const {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG (layout.is_vector_layout(),
@@ -174,7 +182,7 @@ get_component (const int i, const bool dynamic) {
   return subfield (fname + "_" + std::to_string(i),idim,i,dynamic);
 }
 
-Field Field::get_components(const int beg, const int end) {
+Field Field::get_components(const int beg, const int end) const {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG(layout.is_vector_layout(),
@@ -194,12 +202,17 @@ Field Field::get_components(const int beg, const int end) {
                   idim, beg, end);
 }
 
-bool Field::equivalent(const Field& rhs) const
+bool Field::is_aliasing(const Field& rhs) const
 {
-  return (m_header==rhs.m_header &&
-          is_allocated() &&
-          m_data.d_view==rhs.m_data.d_view &&
-          m_data.h_view==rhs.m_data.h_view);
+  if (this==&rhs)
+    return true;  // Same object
+
+  if (not is_allocated() or not rhs.is_allocated())
+    return false; // Once allocated, they will be different
+
+  // NOTE: I'm not sure we NEED to check m_data, but we might as well
+  return m_header->is_aliasing(rhs.get_header()) and
+         m_data.d_view==rhs.m_data.d_view;
 }
 
 void Field::allocate_view ()
