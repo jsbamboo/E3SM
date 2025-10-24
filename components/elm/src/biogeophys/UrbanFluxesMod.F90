@@ -250,6 +250,9 @@ contains
          h2osno              =>   col_ws%h2osno                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
          qaf                 =>   lun_ws%qaf                   , & ! Output: [real(r8) (:)   ]  urban canopy air specific humidity (kg/kg)
          q_ref2m             =>   veg_ws%q_ref2m             , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]---------------------------------------------------------
+         q_ref2m_u           =>   veg_ws%q_ref2m_u            , & ! Output: [real(r8) (:)   ]  Urban 2 m height surface specific humidity (kg/kg)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]--------------------------------------------------------                 
          rh_ref2m            =>   veg_ws%rh_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
          rh_ref2m_u          =>   veg_ws%rh_ref2m_u          , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
 
@@ -1027,6 +1030,9 @@ contains
          call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
          rh_ref2m_u(p) = rh_ref2m(p)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]---------------------------------------------------------
+         q_ref2m_u(p) = q_ref2m(p)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]---------------------------------------------------------
 
          ! Variables needed by history tape
          t_veg(p) = forc_t(t)

@@ -95,6 +95,10 @@ module VegetationDataType
     ! Note: All units given as kg in this data type imply kg of H2O
     real(r8), pointer :: h2ocan       (:) => null() ! canopy water (kg/m2)
     real(r8), pointer :: q_ref2m      (:) => null() ! 2 m height surface specific humidity (kg H2O/kg moist air)
+    !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------     
+    real(r8), pointer :: q_ref2m_r    (:) => null() ! 2 m height surface specific humidity - rural (kg/kg)
+    real(r8), pointer :: q_ref2m_u    (:) => null() ! 2 m height surface specific humidity - urban (kg/kg)
+    !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------    
     real(r8), pointer :: rh_ref2m     (:) => null() ! 2 m height surface relative humidity (%)
     real(r8), pointer :: rh_ref2m_r   (:) => null() ! 2 m height surface relative humidity - rural (%)
     real(r8), pointer :: rh_ref2m_u   (:) => null() ! 2 m height surface relative humidity - urban (%)
@@ -1809,6 +1813,10 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     allocate(this%h2ocan              (begp:endp))          ; this%h2ocan            (:) = spval
     allocate(this%q_ref2m             (begp:endp))          ; this%q_ref2m           (:) = spval
+    !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
+    allocate(this%q_ref2m_r           (begp:endp))          ; this%q_ref2m_r         (:) = spval
+    allocate(this%q_ref2m_u           (begp:endp))          ; this%q_ref2m_u         (:) = spval
+    !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
     allocate(this%rh_ref2m            (begp:endp))          ; this%rh_ref2m          (:) = spval
     allocate(this%rh_ref2m_r          (begp:endp))          ; this%rh_ref2m_r        (:) = spval
     allocate(this%rh_ref2m_u          (begp:endp))          ; this%rh_ref2m_u        (:) = spval
@@ -1831,6 +1839,18 @@ module VegetationDataType
     call hist_addfld1d (fname='Q2M', units='kg/kg',  &
          avgflag='A', long_name='2m specific humidity', &
          ptr_patch=this%q_ref2m)
+
+   !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
+   this%q_ref2m_r(begp:endp) = spval
+    call hist_addfld1d (fname='Q2M_R', units='kg/kg',  &
+         avgflag='A', long_name='Rural 2m specific humidity', &
+         ptr_patch=this%q_ref2m_r)
+     
+   this%q_ref2m_u(begp:endp) = spval
+    call hist_addfld1d (fname='Q2M_U', units='kg/kg',  &
+         avgflag='A', long_name='Urban 2m specific humidity', &
+         ptr_patch=this%q_ref2m_u)
+   !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
 
     this%rh_ref2m(begp:endp) = spval
     call hist_addfld1d (fname='RH2M', units='%',  &

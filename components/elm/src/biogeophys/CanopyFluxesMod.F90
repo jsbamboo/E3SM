@@ -413,6 +413,9 @@ contains
 
          h2ocan               => veg_ws%h2ocan              , & ! Output: [real(r8) (:)   ]  canopy water (mm H2O)
          q_ref2m              => veg_ws%q_ref2m             , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
+         q_ref2m_r            => veg_ws%q_ref2m_r           , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface specific humidity (kg/kg)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
          rh_ref2m_r           => veg_ws%rh_ref2m_r          , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)
          rh_ref2m             => veg_ws%rh_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
          rhaf                 => veg_ws%rh_af               , & ! Output: [real(r8) (:)   ]  fractional humidity of canopy air [dimensionless]
@@ -1260,6 +1263,9 @@ contains
          ! 2 m height specific humidity
 
          q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
+         q_ref2m_r(p) = q_ref2m(p)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
 
          ! 2 m height relative humidity
 

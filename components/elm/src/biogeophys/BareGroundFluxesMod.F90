@@ -178,6 +178,9 @@ contains
          t_ref2m_r        =>    veg_es%t_ref2m_r      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)
 
          q_ref2m          =>    veg_ws%q_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
+         q_ref2m_r        =>    veg_ws%q_ref2m_r       , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface specific humidity (kg/kg)
+         !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
          rh_ref2m_r       =>    veg_ws%rh_ref2m_r      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)
          rh_ref2m         =>    veg_ws%rh_ref2m        , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
 
@@ -417,6 +420,9 @@ contains
          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
+            !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
+            q_ref2m_r(p) = q_ref2m(p)
+            !-------------------------------------------------------------[YC ADD ELM OUTPUT]-----------------------------------------------------------
          end if
 
          ! Check for convergence of stress.
