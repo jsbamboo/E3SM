@@ -191,7 +191,7 @@ contains
     mach_eps       = epsilon(1.0_r8)
 
     nlevsoifl   =  10
-    nlevurb     =  5
+    nlevurb     =  10
     if ( .not. more_vertlayers )then
        nlevsoi     =  nlevsoifl
        nlevgrnd    =  15
