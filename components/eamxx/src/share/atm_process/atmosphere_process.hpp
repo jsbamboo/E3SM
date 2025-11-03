@@ -3,15 +3,15 @@
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
-#include "share/atm_process/IOPDataManager.hpp"
-#include "share/field/field_identifier.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/IOPDataManager.hpp"
+#include "share/data_managers/SCDataManager.hpp"
+#include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/property_checks/property_check.hpp"
+#include "share/field/field_identifier.hpp"
 #include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
-#include "share/grid/grids_manager.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>
@@ -87,7 +87,7 @@ public:
 
   using prop_check_ptr = std::shared_ptr<PropertyCheck>;
 
-  using iop_data_ptr = std::shared_ptr<control::IOPDataManager>;
+  using iop_data_ptr = std::shared_ptr<IOPDataManager>;
 
   // Base constructor to set MPI communicator and params
   AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -117,6 +117,8 @@ public:
   void run (const double dt);
   void finalize ();
 
+  bool is_initialized () const { return m_is_initialized; }
+
   // Return the MPI communicator
   const ekat::Comm& get_comm () const { return m_comm; }
 
@@ -125,7 +127,8 @@ public:
 
   // This method prepares the atm proc for computing the tendency of
   // output fields, as prescribed via parameter list
-  virtual void setup_tendencies_requests ();
+  // NOTE: virtual, as AtmProcGroup will override and just call it on stored procs
+  virtual void setup_step_tendencies (const std::string& default_grid);
 
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
@@ -175,7 +178,7 @@ public:
 
 
   void init_step_tendencies ();
-  void compute_step_tendencies (const double dt);
+  void compute_step_tendencies ();
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
@@ -276,6 +279,7 @@ public:
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_conservation_data.has_column_conservation_check; }
   bool has_energy_fixer () { return m_conservation_data.has_energy_fixer; }
+  bool has_air_sea_surface_water_thermo_fixer () { return m_conservation_data.has_air_sea_surface_water_thermo_fixer; }
   bool has_energy_fixer_debug_info () { return m_conservation_data.has_energy_fixer_debug_info; }
 
   // Print a global hash of internal fields (useful for debugging non-bfbness)
@@ -469,8 +473,8 @@ protected:
   virtual void set_required_group_impl (const FieldGroup& /* group */) {}
   virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
 
-  // Adds a field to the list of internal fields
-  void add_internal_field (const Field& f);
+  // Adds a field to the list of internal fields, possibly adding it to the given groups
+  void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
 
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
@@ -544,7 +548,7 @@ private:
   // check: dt, tolerance, current mass and energy value per column.
   void compute_column_conservation_checks_data (const double dt);
 
-  void fix_energy (const double dt, const bool & print_debug_info);
+  void fix_energy (const double dt, const bool water_thermo_fixer, const bool print_debug_info);
 
   // Run an individual property check. The input property_check_category_name
   void run_property_check (const prop_check_ptr&       property_check,
@@ -564,9 +568,8 @@ private:
   std::list<Field>        m_internal_fields;
 
   // Data structures necessary to compute tendencies of updated fields
-  strmap_t<std::string>    m_tend_to_field;
-  strmap_t<Field>          m_proc_tendencies;
-  strmap_t<Field>          m_start_of_step_fields;
+  strmap_t<Field>    m_proc_tendencies;
+  strmap_t<Field>    m_start_of_step_fields;
 
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
@@ -593,6 +596,7 @@ private:
     // mass or energy or both? rename
     Real tolerance;
     bool has_energy_fixer;
+    bool has_air_sea_surface_water_thermo_fixer;
     bool has_energy_fixer_debug_info;
   };
   ConservationData m_conservation_data;
@@ -604,15 +608,14 @@ private:
   // The number of times this process needs to be subcycled
   int m_num_subcycles = 1;
 
+  bool m_is_initialized = false;
+
   // This can be queried by derived classes, in case they need to know which
   // iteration of the subcycle this is
   int m_subcycle_iter;
 
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
-
-  // Whether this atm proc should compute tendencies for any of its updated fields
-  bool m_compute_proc_tendencies = false;
 
   // Log level for when property checks perform a repair
   ekat::logger::LogLevel  m_repair_log_level;

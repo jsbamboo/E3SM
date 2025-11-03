@@ -15,6 +15,7 @@ module elm_driver
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_firn_percolation_and_compaction
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use elm_varctl             , only : use_erosion, use_fates_sp, use_fan
+  use elm_varctl             , only : iac_present
   use elm_varctl             , only : mpi_sync_nstep_freq
   use elm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use elm_time_manager       , only : get_curr_calday, get_days_per_year
@@ -85,6 +86,8 @@ module elm_driver
   use atm2lndMod             , only : downscale_forcings
   use lnd2atmMod             , only : lnd2atm
   use lnd2glcMod             , only : lnd2glc_type
+  use lnd2iacMod             , only : lnd2iac_type
+  use iac2lndMod             , only : iac2lnd_type
   !
   use seq_drydep_mod         , only : n_drydep, drydep_method, DD_XLND
   use DryDepVelocity         , only : depvel_compute
@@ -125,6 +128,8 @@ module elm_driver
   use elm_instMod            , only : lnd2atm_vars
   use elm_instMod            , only : glc2lnd_vars
   use elm_instMod            , only : lnd2glc_vars
+  use elm_instMod            , only : lnd2iac_vars
+  use elm_instMod            , only : iac2lnd_vars
   use elm_instMod            , only : soil_water_retention_curve
   use elm_instMod            , only : chemstate_vars
   use elm_instMod            , only : alm_fates
@@ -458,7 +463,7 @@ contains
        energyflux_vars, canopystate_vars, photosyns_vars, cnstate_vars,                       &
        veg_cs, c13_veg_cs, c14_veg_cs,         &
        col_cs, c13_col_cs, c14_col_cs, col_cf,  &
-       grc_cs, grc_cf , glc2lnd_vars,  crop_vars)
+       grc_cs, grc_cf , glc2lnd_vars,  crop_vars, iac2lnd_vars)
     call t_stopf('dyn_subgrid')
 
     if (use_cn  .or. use_fates) then
@@ -996,7 +1001,8 @@ contains
 
        call t_startf('ecosysdyn')
        if (use_cn)then
-          call crop_vars%CropIncrementYear(filter(nc)%num_pcropp, filter(nc)%pcropp)
+          call crop_vars%CropIncrementYear(filter(nc)%num_pcropp, filter(nc)%pcropp, &
+                                           filter(nc)%num_ppercropp, filter(nc)%ppercropp)
        endif
 
        if(use_betr)then
@@ -1007,7 +1013,8 @@ contains
            call CNEcosystemDynBetr(bounds_clump,                                &
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
-                 filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
+                 filter(nc)%num_pcropp, filter(nc)%pcropp,                      &
+                 filter(nc)%num_ppercropp, filter(nc)%ppercropp, doalb,         &
                  cnstate_vars, carbonflux_vars, carbonstate_vars,               &
                  c13_carbonflux_vars, c13_carbonstate_vars,                     &
                  c14_carbonflux_vars, c14_carbonstate_vars,                     &
@@ -1043,6 +1050,7 @@ contains
                        filter(nc)%num_soilc, filter(nc)%soilc,  &
                        filter(nc)%num_soilp, filter(nc)%soilp,  &
                        filter(nc)%num_pcropp, filter(nc)%pcropp, &
+                       filter(nc)%num_ppercropp, filter(nc)%ppercropp, &
                        cnstate_vars,            &
                        atm2lnd_vars,            &
                        canopystate_vars, soilstate_vars, crop_vars,   &
@@ -1434,6 +1442,21 @@ contains
     end if
 
     ! ============================================================================
+    ! Update stuff to send to iac
+    ! ============================================================================
+
+    if (iac_present) then
+       call t_startf('lnd2iac')
+       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+       do nc = 1,nclumps
+          call get_clump_bounds(nc, bounds_clump)
+          call lnd2iac_vars%update_lnd2iac(bounds_clump)
+       end do
+       !$OMP END PARALLEL DO
+       call t_stopf('lnd2iac')
+    end if
+
+    ! ============================================================================
     ! Write global average diagnostics to standard output
     ! ============================================================================
 
@@ -1462,6 +1485,8 @@ contains
        call veg_es%UpdateAccVars(bounds_proc)
 
        call canopystate_vars%UpdateAccVars(bounds_proc)
+
+       call energyflux_vars%UpdateAccVars(bounds_proc)
 
        if (crop_prog) then
           call crop_vars%UpdateAccVars(bounds_proc, temperature_vars)
@@ -1532,7 +1557,6 @@ contains
                photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars,  &
                sedflux_vars, ep_betr, alm_fates, crop_vars, rdate=rdate )
-
          !----------------------------------------------
          ! pflotran (off now)
          ! if (use_pflotran) then

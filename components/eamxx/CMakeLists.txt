@@ -51,8 +51,10 @@ if (SCREAM_CIME_BUILD)
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
-# We want to use C++17 in EAMxx
-set(CMAKE_CXX_STANDARD 17)
+if (NOT CMAKE_CXX_STANDARD)
+  # Default to C++17 in EAMxx
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX C Fortran)
@@ -570,7 +572,11 @@ if (SCREAM_DOUBLE_PRECISION)
     set(SCREAM_Fortran_FLAGS -real-size 64)
   elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Cray")
     set(SCREAM_Fortran_FLAGS -s default32 -eZ)
-  else()
+  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
+    #set(SCREAM_Fortran_FLAGS -real-size=8 -double-size=8) # these are nvidia flags, but dont need, already supports IEEE 754 floating-point standard
+  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
+  else() # default, currently same as GNU
     set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()
@@ -597,16 +603,6 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   if (NOT SCREAM_LIB_ONLY)
     add_subdirectory(tests)
   endif()
-
-  # Generate eamxx_config.h and eamxx_config.f
-  include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
-
-  # Generate eamxx_version.h
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_version.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_version.h)
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder

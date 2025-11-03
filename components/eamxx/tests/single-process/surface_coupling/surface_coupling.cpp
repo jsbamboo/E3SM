@@ -3,12 +3,13 @@
 #include "control/atmosphere_driver.hpp"
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
-#include "diagnostics/register_diagnostics.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_yaml.hpp>
 #include <ekat_view_utils.hpp>

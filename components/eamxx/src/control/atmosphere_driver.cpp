@@ -2,9 +2,8 @@
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
-#include "share/eamxx_config.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -13,6 +12,7 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
+#include "share/core/eamxx_config.hpp"
 #include "eamxx_version.h"
 
 #include <ekat_assert.hpp>
@@ -26,7 +26,7 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #ifndef SCREAM_CIME_BUILD
 #include <unistd.h>
@@ -82,11 +82,11 @@ namespace control {
  *
  * For more info see header comments in the proper files:
  *  - for field                -> src/share/field/field.hpp
- *  - for field manager        -> src/share/field/field_manager.hpp
+ *  - for field manager        -> src/share/data_managers/field_manager.hpp
  *  - for field groups         -> src/share/field/field_group.hpp
  *  - for field/group requests -> src/share/field/field_request.hpp
  *  - for grid                 -> src/share/grid/abstract_grid.hpp
- *  - for grid manager         -> src/share/grid/grids_manager.hpp
+ *  - for grid manager         -> src/share/data_managers/grids_manager.hpp
  *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
  *  - for atm proc group       -> src/share/atm_process/atmosphere_process_group.hpp
  *  - for scorpio input/output -> src/share/io/scorpio_[input|output].hpp
@@ -310,10 +310,6 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
-
-  // Also make each atm proc build requests for tendency fields, if needed
-  m_atm_process_group->setup_tendencies_requests();
-
   m_ad_status |= s_grids_created;
 
   stop_timer("EAMxx::create_grids");
@@ -428,7 +424,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   auto phys_grid = m_grids_manager->get_grid("physics");
   const auto phys_grid_name = phys_grid->name();
   // Get fields needed to run the mass and energy conservation checks. Require that
-  // all fields exist.
+  // all fields exist (except h2otemp which is optional).
   EKAT_REQUIRE_MSG (
     m_field_mgr->has_field("pseudo_density", phys_grid_name) and
     m_field_mgr->has_field("ps",             phys_grid_name) and
@@ -465,6 +461,12 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const auto water_flux     = m_field_mgr->get_field("water_flux",     phys_grid_name);
   const auto ice_flux       = m_field_mgr->get_field("ice_flux",       phys_grid_name);
   const auto heat_flux      = m_field_mgr->get_field("heat_flux",      phys_grid_name);
+  
+  // h2otemp is optional - only available when SurfaceCouplingImporter is active
+  Field h2otemp;
+  if (m_field_mgr->has_field("h2otemp", phys_grid_name)) {
+    h2otemp = m_field_mgr->get_field("h2otemp", phys_grid_name);
+  }
 
   auto conservation_check =
     std::make_shared<MassAndEnergyConservationCheck>(m_atm_comm,phys_grid,
@@ -473,7 +475,8 @@ void AtmosphereDriver::setup_column_conservation_checks ()
                                                            horiz_winds, T_mid, qv,
                                                            qc, qr, qi,
                                                            vapor_flux, water_flux,
-                                                           ice_flux, heat_flux);
+                                                           ice_flux, heat_flux,
+                                                           h2otemp);
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =
@@ -585,6 +588,9 @@ void AtmosphereDriver::create_fields()
     m_atm_process_group->set_required_field(m_field_mgr->get_field(fid).get_const());
   }
 
+  // Make atm procs create the proc-level tendency fields (if requested)
+  m_atm_process_group->setup_step_tendencies(m_grids_manager->get_grid("physics")->name());
+
   // Now that all processes have all the required/computed fields/groups, they
   // have also created any possible internal field (if needed). Notice that some
   // atm proc might have created internal fields already during the set_grids
@@ -599,8 +605,8 @@ void AtmosphereDriver::create_fields()
     m_field_mgr->add_field(f);
   }
 
-  // Now go through the input fields/groups to the atm proc group, as well as
-  // the internal fields/groups, and mark them as part of the RESTART group.
+  // Now go through the input fields/groups to the atm proc group,
+  // and mark them as part of the RESTART group.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
     m_field_mgr->add_to_group(fid, "RESTART");
@@ -614,9 +620,14 @@ void AtmosphereDriver::create_fields()
       }
     }
   }
+  // Internal fields have their group names set by the processes that create them.
+  // Hence, simply add them to all the groups they are marked as part of
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
-    const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
+    const auto& ftrack = f.get_header().get_tracking();
+    const auto& fid    = f.get_header().get_identifier();
+    for (const auto& gn : ftrack.get_groups_names()) {
+      m_field_mgr->add_to_group(fid, gn);
+    }
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -937,9 +948,16 @@ void AtmosphereDriver::restart_model ()
       // No field needs to be restarted on this grid.
       continue;
     }
-    const auto& restart_group = m_field_mgr->get_group_info("RESTART", gn);
+    const auto& restart_fnames = m_field_mgr->get_group_info("RESTART", gn).m_fields_names;
     std::vector<Field> fields;
-    for (const auto& fn : restart_group.m_fields_names) {
+    for (const auto& fn : restart_fnames) {
+      // If the field has a parent, and the parent is also in the RESTART group,
+      // then skip it, since restarting the parent will restart the child too
+      auto f = m_field_mgr->get_field(fn,gn);
+      auto p = f.get_header().get_parent();
+      if (p and ekat::contains(p->get_tracking().get_groups_names(),"RESTART")) {
+        continue;
+      }
       fields.push_back(m_field_mgr->get_field(fn,gn));
     }
     read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);

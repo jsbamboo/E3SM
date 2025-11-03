@@ -1,10 +1,11 @@
 #include "eamxx_ml_correction_process_interface.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/field/field_utils.hpp"
 
 #include <ekat_assert.hpp>
+#include <ekat_fpe.hpp>
 #include <ekat_units.hpp>
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_fpe.hpp>

@@ -2,12 +2,12 @@
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
-#include "physics/share/eamxx_trcmix.hpp"
+#include "share/physics/eamxx_trcmix.hpp"
 
-#include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -209,7 +209,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // 0.67 micron and 10.5 micron optical depth (needed for COSP)
   add_field<Computed>("dtau067"       , scalar3d_mid, nondim, grid_name);
   add_field<Computed>("dtau105"       , scalar3d_mid, nondim, grid_name);
-  add_field<Computed>("sunlit"        , scalar2d    , nondim, grid_name);
+  add_field<Computed>("sunlit_mask"   , scalar2d    , nondim, grid_name);
   add_field<Computed>("cldfrac_rad"   , scalar3d_mid, nondim, grid_name);
   // Cloud-top diagnostics following AeroCom recommendation
   add_field<Computed>("T_mid_at_cldtop", scalar2d, K, grid_name);
@@ -612,7 +612,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // Outputs for COSP
   auto d_dtau067 = get_field_out("dtau067").get_view<Real**>();
   auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
-  auto d_sunlit = get_field_out("sunlit").get_view<Real*>();
+  auto d_sunlit = get_field_out("sunlit_mask").get_view<Real*>();
 
   Kokkos::deep_copy(d_dtau067,0.0);
   Kokkos::deep_copy(d_dtau105,0.0);
@@ -1219,12 +1219,17 @@ void RRTMGPRadiation::run_impl (const double dt) {
 // =========================================================================================
 
 void RRTMGPRadiation::finalize_impl  () {
-  m_gas_concs_k.reset();
-  // Finalize the interface, passing a bool for rank 0
-  // to print info about memory stats on that rank
-  interface_t::rrtmgp_finalize(m_comm.am_i_root());
+  // Guard the finalization, since it would throw if initialize was not called.
+  // This can happen if an atm proc that is inited before RRTMGP throws during init,
+  // and the stack gets destroyed. The driver calls the 'finalize' method on all atm procs
+  if (is_initialized()) {
+    m_gas_concs_k.reset();
+    // Finalize the interface, passing a bool for rank 0
+    // to print info about memory stats on that rank
+    interface_t::rrtmgp_finalize(m_comm.am_i_root());
 
-  finalize_kls();
+    finalize_kls();
+  }
 }
 // =========================================================================================
 

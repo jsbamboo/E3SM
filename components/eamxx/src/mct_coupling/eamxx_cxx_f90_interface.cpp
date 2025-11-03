@@ -6,14 +6,14 @@
 
 #include "dynamics/register_dynamics.hpp"
 #include "physics/register_physics.hpp"
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 #include "control/register_surface_coupling.hpp"
 
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/eamxx_session.hpp"
-#include "share/eamxx_config.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_session.hpp"
+#include "share/core/eamxx_config.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_yaml.hpp>
 #include <ekat_logger.hpp>

@@ -34,16 +34,20 @@ set (SCREAM_LIBS
      ${dynLibName}
      p3
      shoc
-     zm
      scream_rrtmgp
      eamxx_cosp
      cld_fraction
      spa
      iop_forcing
      nudging
-     diagnostics
      tms
 )
+
+# ZM is not always on yet
+if (TARGET zm)
+  list(APPEND SCREAM_LIBS zm)
+endif()
+
 if (SCREAM_ENABLE_ML_CORRECTION)
   list (APPEND SCREAM_LIBS ml_correction)
 endif ()

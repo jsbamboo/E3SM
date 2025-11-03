@@ -2,18 +2,18 @@
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 #include "share/field/field_identifier.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_pack.hpp>
 #include <ekat_parameter_list.hpp>

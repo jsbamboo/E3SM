@@ -7,7 +7,7 @@ module EcosystemDynMod
   use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, use_fan
+  use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, iac_present, use_fan
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -274,6 +274,11 @@ contains
 
     call t_stop_lnd(event)
 
+    if (use_fates) then
+       call alm_fates%wrap_FatesAtmosphericCarbonFluxes(bounds, num_soilc, filter_soilc)
+       call alm_fates%wrap_FatesCarbonStocks(bounds, num_soilc, filter_soilc)
+    endif
+
   end subroutine EcosystemDynLeaching
 
 
@@ -282,6 +287,7 @@ contains
        num_soilc, filter_soilc,                                         &
        num_soilp, filter_soilp,                                         &
        num_pcropp, filter_pcropp,                                       &
+       num_ppercropp, filter_ppercropp,                                 &
        cnstate_vars,  atm2lnd_vars,           &
        canopystate_vars, soilstate_vars, crop_vars,   &
        ch4_vars, photosyns_vars,   &
@@ -323,6 +329,8 @@ contains
     integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
     integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
     integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
+    integer                  , intent(in)    :: num_ppercropp     ! number of prog perennial crop patches in filter
+    integer                  , intent(in)    :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
@@ -400,7 +408,8 @@ contains
        event = 'MaintenanceResp'
        call t_start_lnd(event)
        if (crop_prog) then
-          call NitrogenFert(bounds, num_soilc,filter_soilc, num_pcropp, filter_pcropp )
+          call NitrogenFert(bounds, num_soilc,filter_soilc, num_pcropp, filter_pcropp, &
+                            num_ppercropp, filter_ppercropp)
           call PhosphorusFert(bounds, num_soilc, filter_soilc )
 
           call CNSoyfix(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -782,7 +791,7 @@ contains
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
 
-       if (get_do_harvest()) then
+       if (get_do_harvest() .or. iac_present) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars )
        end if
