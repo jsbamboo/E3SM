@@ -239,7 +239,7 @@
     <depend_separator>:</depend_separator>
     <walltime_format>%Mm</walltime_format>
     <submit_args>
-      <arg flag="--time" name="60m"/>
+      <arg flag="--time-limit" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="--queue" name="$JOB_QUEUE"/>
       <arg flag="--bank" name="$PROJECT"/>
     </submit_args>
@@ -254,6 +254,7 @@
   </batch_system>
 
   <batch_system MACH="tuo" type="flux">
+    <batch_submit_in_job>flux --parent batch</batch_submit_in_job>
     <queues>
       <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
       <queue walltimemax="01:00:00" nodemax="20">pdebug</queue>
