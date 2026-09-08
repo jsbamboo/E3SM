@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
@@ -125,7 +125,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
-  using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
+  using diag_ptr_type = std::shared_ptr<AbstractDiagnostic>;
 
   ~AtmosphereOutput();
 
@@ -145,7 +145,7 @@ public:
                          const scorpio::FileMode mode);
 
   void init_timestep(const util::TimeStamp &start_of_step);
-  void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
+  void run(const std::string &filename, const util::TimeStamp& ts, const bool output_step, const bool checkpoint_step,
            const int nsteps_since_last_output, const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint() const;
@@ -173,7 +173,7 @@ protected:
   void register_variables(const std::string &filename, const std::string &fp_precision,
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
-  void compute_diagnostics(const bool allow_invalid_fields);
+  void computes(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
@@ -220,8 +220,10 @@ protected:
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType m_avg_type;
-  Real m_avg_coeff_threshold =
-      0.5; // % of unfilled values required to not just assign value as FillValue
+  // Fraction (in [0,1)) of the output interval that must be valid for an averaged
+  // value to be written out (rather than assigned the FillValue). The default of 0
+  // means we take into account >0 valid snaps (i.e., even if only 1 is valid, we take it).
+  Real m_avg_coeff_threshold = 0;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.

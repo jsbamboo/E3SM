@@ -221,6 +221,12 @@
 					possible_values="Any integer greater than or equal to 2."
 		/>
 	</nml_record>
+	<nml_record name="lateral_walls" mode="forward">
+		<nml_option name="config_wall_slip_factor" type="real" default_value="1.0"
+					description="Lateral wall slip boundary condition: no-slip=0.0, free-slip=1.0, with partial-slip lying in-between. This factor multiplies relative vorticity computed at vertices positioned on lateral boundaries."
+					possible_values="Any real number between 0.0 and 1.0"
+		/>
+	</nml_record>
 	<nml_record name="hmix" mode="forward">
 		<nml_option name="config_hmix_scaleWithMesh" type="logical" default_value=".false."
 					description="If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power."
@@ -284,22 +290,42 @@
 		/>
 	</nml_record>
 	<nml_record name="hmix_Leith" mode="forward">
-		<nml_option name="config_use_Leith_del2" type="logical" default_value=".false."
-					description="If true, the Leith enstrophy-cascade closure is turned on"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Leith_parameter" type="real" default_value="1.0" units="non-dimensional"
-					description="Non-dimensional Leith closure parameter"
-					possible_values="any positive real"
-		/>
-		<nml_option name="config_Leith_dx" type="real" default_value="15000.0" units="m"
-					description="Characteristic length scale, usually the smallest dx in the mesh"
-					possible_values="any positive real"
-		/>
-		<nml_option name="config_Leith_visc2_max" type="real" default_value="2.5e3" units="m^2 s^-1"
-					description="Upper bound on the allowable value of Leith-computed viscosity"
-					possible_values="any positive real"
-		/>
+                <nml_option name="config_use_Leith_del2" type="logical" default_value=".false."
+                                        description="If true, the modified del2 Leith enstrophy-cascade closure is turned on"
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_use_Leith_del4" type="logical" default_value=".false."
+                                        description="If true, the modified del4 Leith enstrophy-cascade closure is turned on"
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_Leith_del2_parameter" type="real" default_value="2.2" units="non-dimensional"
+                                        description="Non-dimensional Leith del2 closure parameter"
+                                        possible_values="any positive real"
+                />
+                <nml_option name="config_Leith_del4_parameter" type="real" default_value="2.2" units="non-dimensional"
+                                        description="Non-dimensional Leith del4 closure parameter"
+                                        possible_values="any positive real"
+                />
+                <nml_option name="config_Leith_del2_div_scaler" type="real" default_value="1.0" units="non-dimensional"
+                                        description="Non-dimensional Leith del2 closure divergence scaler"
+                                        possible_values="any positive real"
+                />
+                <nml_option name="config_Leith_del4_div_scaler" type="real" default_value="1.0" units="non-dimensional"
+                                        description="Non-dimensional Leith del4 closure divergence scaler"
+                                        possible_values="any positive real"
+                />
+                <nml_option name="config_Leith_dx" type="real" default_value="30000.0" units="m"
+                                        description="Characteristic length scale, usually the smallest dx in the mesh"
+                                        possible_values="any positive real"
+                />
+                <nml_option name="config_Leith_visc2_max" type="real" default_value="1.0e3" units="m^2 s^-1"
+                                        description="Upper bound on the allowable value of Leith-computed viscosity"
+                                        possible_values="any positive real"
+                />
+                <nml_option name="config_Leith_visc4_max" type="real" default_value="1.2e11" units="m^4 s^-1"
+                                        description="Upper bound on the allowable value of Leith-computed viscosity"
+                                        possible_values="any positive real"
+                />
 	</nml_record>
 	<nml_record name="Redi_isopycnal_mixing" mode="forward">
 		<nml_option name="config_use_Redi" type="logical" default_value=".false."
@@ -2168,7 +2194,7 @@
 			<var name="SSHinitial" packages="scaledSFWFPKG"/>
 			<var name="SSHfinal" packages="scaledSFWFPKG"/>
 			<var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
-			<var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
+			<var name="SFWFScalingFactor" packages="scaledSFWFPKG"/>
 		</stream>
 
 		<stream name="output"
@@ -3917,7 +3943,7 @@
 			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
 		/>
 		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
-			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
+			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean. Currently always assigned a value of 0 because it is included in seaIceHeatFlux as assigned by Icepack"
 		/>
 		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."

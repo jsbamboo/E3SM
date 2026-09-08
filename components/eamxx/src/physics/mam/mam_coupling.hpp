@@ -19,6 +19,7 @@ using KT = ekat::KokkosTypes<ekat::DefaultDevice>;
 using view_1d       = typename KT::template view_1d<Real>;
 using view_2d       = typename KT::template view_2d<Real>;
 using view_3d       = typename KT::template view_3d<Real>;
+using view_4d       = typename KT::template view<Real****>;
 using const_view_1d = typename KT::template view_1d<const Real>;
 using const_view_2d = typename KT::template view_2d<const Real>;
 using const_view_3d = typename KT::template view_3d<const Real>;
@@ -415,7 +416,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     mem += view_2d_min_mid_ptrs[i]->size();
   }
 
-  uview_2d *view_2d_min_scratch_ptrs[buffer.num_2d_scratch];
+  uview_2d *view_2d_min_scratch_ptrs[Buffer::max_num_2d_scratch];
   for(int i = 0; i < buffer.num_2d_scratch; ++i) {
     view_2d_min_scratch_ptrs[i]  = &buffer.scratch[i];
     *view_2d_min_scratch_ptrs[i] = view_2d(mem, ncol, nlev);

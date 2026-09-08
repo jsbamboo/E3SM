@@ -10,6 +10,7 @@
 #include <ekat_pack_utils.hpp>
 
 #include <numeric>
+#include <filesystem>
 
 namespace scream
 {
@@ -21,7 +22,8 @@ HorizontalRemapper (const grid_ptr_type& src_grid,
                     const bool track_mask)
  : m_track_mask (track_mask)
 {
-  set_name("HorizRemapper " + map_file);
+  std::filesystem::path p(map_file);
+  set_name("HRemap " + p.filename().string());
 
   m_remap_data = HorizRemapperDataRepo::instance().get_data(src_grid,tgt_grid,map_file);
 
@@ -45,7 +47,8 @@ HorizontalRemapper (const grid_ptr_type& grid,
                     const bool track_mask)
  : m_track_mask (track_mask)
 {
-  set_name("HorizRemapper " + map_file);
+  std::filesystem::path p(map_file);
+  set_name("HRemap " + p.filename().string());
 
   m_remap_data = HorizRemapperDataRepo::instance().get_data(grid,map_file);
 
@@ -101,6 +104,18 @@ HorizontalRemapper::
 ~HorizontalRemapper ()
 {
   clean_up();
+}
+
+void HorizontalRemapper::
+set_mask_threshold (const Real thresh)
+{
+  EKAT_REQUIRE_MSG (thresh>=0 and thresh<1,
+      "Error! Invalid mask threshold for HorizontalRemapper.\n"
+      "  - remapper name: " + name() + "\n"
+      "  - threshold    : " + std::to_string(thresh) + "\n"
+      "  - valid range  : [0,1)\n");
+
+  m_mask_threshold = thresh;
 }
 
 void HorizontalRemapper::
@@ -358,7 +373,7 @@ void HorizontalRemapper::
 local_mat_vec (const Field& x, const Field& y) const
 {
   if (m_timers_enabled)
-    start_timer(name()+" mat-vec");
+    start_timer(name()+" matvec");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -377,9 +392,6 @@ local_mat_vec (const Field& x, const Field& y) const
   auto weights     = m_remap_data->m_weights;
 
   switch (rank) {
-    // Note: in each case, handle 1st contribution to each row separately,
-    //       using = instead of +=. This allows to avoid doing an extra
-    //       loop to zero out y before the mat-vec.
     case 1:
     {
       // Unlike get_view, get_strided_view returns a LayoutStride view,
@@ -391,10 +403,11 @@ local_mat_vec (const Field& x, const Field& y) const
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg));
-        for (int icol=beg+1; icol<end; ++icol) {
-          y_view(row) += weights(icol)*x_view(col_lids(icol));
+        Real accum = 0;
+        for (int icol=beg; icol<end; ++icol) {
+          accum += weights(icol)*x_view(col_lids(icol));
         }
+        y_view(row) = accum;
       });
       break;
     }
@@ -412,10 +425,11 @@ local_mat_vec (const Field& x, const Field& y) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j);
+          Pack accum = 0;
+          for (int icol=beg; icol<end; ++icol) {
+            accum += weights(icol)*x_view(col_lids(icol),j);
           }
+          y_view(row,j) = accum;
         });
       });
       break;
@@ -437,10 +451,11 @@ local_mat_vec (const Field& x, const Field& y) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
+          Pack accum = 0;
+          for (int icol=beg; icol<end; ++icol) {
+            accum += weights(icol)*x_view(col_lids(icol),j,k);
           }
+          y_view(row,j,k) = accum;
         });
       });
       break;
@@ -464,10 +479,11 @@ local_mat_vec (const Field& x, const Field& y) const
           const int j = (idx / dim3) / dim2;
           const int k = (idx / dim3) % dim2;
           const int l =  idx % dim3;
-          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l);
+          Pack accum = 0;
+          for (int icol=beg; icol<end; ++icol) {
+            accum += weights(icol)*x_view(col_lids(icol),j,k,l);
           }
+          y_view(row,j,k,l) = accum;
         });
       });
       break;
@@ -476,7 +492,7 @@ local_mat_vec (const Field& x, const Field& y) const
       EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
   }
   if (m_timers_enabled)
-    stop_timer(name()+" mat-vec");
+    stop_timer(name()+" matvec");
 }
 
 template<int PackSize>
@@ -498,7 +514,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
-  const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
+  const Real mask_threshold = m_mask_threshold;
 
   Pack fv_pack(fill_val);
   auto& mask = x.get_valid_mask();
@@ -615,7 +631,7 @@ void HorizontalRemapper::
 local_mat_vec_masked (const Field& x, const Field& y) const
 {
   if (m_timers_enabled)
-    start_timer(name()+" mat-vec (masked)");
+    start_timer(name()+" matvec masked");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -632,9 +648,6 @@ local_mat_vec_masked (const Field& x, const Field& y) const
   auto col_lids    = m_remap_data->m_col_lids;
   auto weights     = m_remap_data->m_weights;
   switch (rank) {
-    // Note: in each case, handle 1st contribution to each row separately,
-    //       using = instead of +=. This allows to avoid doing an extra
-    //       loop to zero out y before the mat-vec.
     // Note: we ASSUME mask fields are ALWAYS contiguous (they are not subfields)
     case 1:
     {
@@ -648,10 +661,11 @@ local_mat_vec_masked (const Field& x, const Field& y) const
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg))*m_view(col_lids(beg));
-        for (int icol=beg+1; icol<end; ++icol) {
-          y_view(row) += weights(icol)*x_view(col_lids(icol))*m_view(col_lids(icol));
+        Real accum = 0;
+        for (int icol=beg; icol<end; ++icol) {
+          accum += weights(icol)*x_view(col_lids(icol))*m_view(col_lids(icol));
         }
+        y_view(row) = accum;
       });
       break;
     }
@@ -670,10 +684,11 @@ local_mat_vec_masked (const Field& x, const Field& y) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j)*m_view(col_lids(beg),j);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j)*m_view(col_lids(icol),j);
+          Pack accum = 0;
+          for (int icol=beg; icol<end; ++icol) {
+            accum += weights(icol)*x_view(col_lids(icol),j)*m_view(col_lids(icol),j);
           }
+          y_view(row,j) = accum;
         });
       });
       break;
@@ -696,10 +711,11 @@ local_mat_vec_masked (const Field& x, const Field& y) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k)*m_view(col_lids(beg),j,k);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k)*m_view(col_lids(icol),j,k);
+          Pack accum = 0;
+          for (int icol=beg; icol<end; ++icol) {
+            accum += weights(icol)*x_view(col_lids(icol),j,k)*m_view(col_lids(icol),j,k);
           }
+          y_view(row,j,k) = accum;
         });
       });
       break;
@@ -724,10 +740,11 @@ local_mat_vec_masked (const Field& x, const Field& y) const
           const int j = (idx / dim3) / dim2;
           const int k = (idx / dim3) % dim2;
           const int l =  idx % dim3;
-          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l)*m_view(col_lids(beg),j,k,l);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l)*m_view(col_lids(icol),j,k,l);
+          Pack accum = 0;
+          for (int icol=beg; icol<end; ++icol) {
+            accum += weights(icol)*x_view(col_lids(icol),j,k,l)*m_view(col_lids(icol),j,k,l);
           }
+          y_view(row,j,k,l) = accum;
         });
       });
       break;
@@ -738,7 +755,7 @@ local_mat_vec_masked (const Field& x, const Field& y) const
     }
   }
   if (m_timers_enabled)
-    stop_timer(name()+" mat-vec (masked)");
+    stop_timer(name()+" matvec masked");
 }
 
 void HorizontalRemapper::pack_and_send ()

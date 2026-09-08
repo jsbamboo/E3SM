@@ -53,13 +53,12 @@ create_field(const std::string& name,
 {
   using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
-  constexpr auto units = ekat::units::Units::nondimensional();
   auto fl = twod
           ? (vec ? grid->get_2d_vector_layout (vec_dim)
                  : grid->get_2d_scalar_layout ())
           : (vec ? grid->get_3d_vector_layout (vtag,vec_dim)
                  : grid->get_3d_scalar_layout (vtag));
-  FieldIdentifier fid(name,fl,units,grid->name());
+  FieldIdentifier fid(name,fl,ekat::units::none,grid->name());
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
@@ -492,8 +491,10 @@ TEST_CASE ("vertical_remapper") {
 
             print (" -> creating and initializing remapper ...\n",comm);
             auto remap = std::make_shared<VerticalRemapper>(src_grid,tgt_grid);
-            remap->set_source_pressure (pmid_src, pint_src);
-            remap->set_target_pressure (pmid_tgt, pint_tgt);
+            remap->set_source_pressure (pmid_src);
+            remap->set_source_pressure (pint_src);
+            remap->set_target_pressure (pmid_tgt);
+            remap->set_target_pressure (pint_tgt);
             remap->set_extrapolation_type(etype_top,Top);
             remap->set_extrapolation_type(etype_bot,Bot);
 
@@ -553,7 +554,7 @@ TEST_CASE ("vertical_remapper") {
             Real tol = 10*std::numeric_limits<Real>::epsilon();
 
             auto check = [&](const Field& computed, Field& expected) {
-              auto rel_diff = computed.clone("rel_diff");
+              auto rel_diff = computed.clone("rel_diff", CloneFlags::CopyData);
               rel_diff.update(expected,1,-1);
               // By construction, expected fields are always > 0, so we can divide
               rel_diff.scale_inv(expected);

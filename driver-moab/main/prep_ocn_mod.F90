@@ -26,6 +26,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only : CPLALLICEID
   use seq_comm_mct,     only : seq_comm_iamin
   use seq_comm_mct,     only : num_moab_exports
+  use seq_comm_mct,     only : mb_dead_comps
 
   use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
 
@@ -290,12 +291,13 @@ contains
 
     compute_maps_online_a2o = cpl_compute_maps_online  ! read from disk or compute online
     compute_maps_online_r2o = .false.  ! *always* read from disk
-    wgtIdFa2o = 'flux_a2o'//C_NULL_CHAR
-    wgtIdSa2o = 'bilinear_a2o'//C_NULL_CHAR
-    wgtIdVa2o = 'vector_a2o'//C_NULL_CHAR
-    wgtIdFr2ol = 'flux_r2o_liq'//C_NULL_CHAR
-    wgtIdFr2oi = 'flux_r2o_ice'//C_NULL_CHAR
-    wgtIdFr2o = 'flux_r2o'//C_NULL_CHAR
+    ! C_NULL_CHAR is added at each iMOAB C API call site; keep variables clean for diagnostics.
+    wgtIdFa2o = 'flux_a2o'
+    wgtIdSa2o = 'bilinear_a2o'
+    wgtIdVa2o = 'vector_a2o'
+    wgtIdFr2ol = 'flux_r2o_liq'
+    wgtIdFr2oi = 'flux_r2o_ice'
+    wgtIdFr2o = 'flux_r2o'
     no_match = .true. ! force to create a new mapper object
 
     allocate(mapper_Sa2o)
@@ -405,9 +407,10 @@ contains
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fa2o'
+             write(logunit,F00) 'Initializing a2o mappers'
           end if
           call seq_map_mapinit(mapper_Fa2o, mpicom_CPLID)
+          call seq_map_mapinit(mapper_Sa2o, mpicom_CPLID)
           if (samegrid_ao) then
              mapper_Fa2o%rearrange_only = .true.
              mapper_Fa2o%strategy = "rearrange"
@@ -419,10 +422,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Fa2o and mapper_Sa2o'
             end if
-            appname = "ATM_OCN_COU"//C_NULL_CHAR
+            appname = "ATM_OCN_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
             idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxao)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxao)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering ATM-OCN intersection application'
               call shr_sys_abort(subname//' ERROR in registering ATM-OCN intersection application')
@@ -473,7 +476,7 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB mesh intersection completed between ATM and OCN with id:', idintx
                   end if
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                   else
                      type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
@@ -504,7 +507,7 @@ contains
 
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm1 = "fv"//C_NULL_CHAR
                      dofnameS="GLOBAL_ID"//C_NULL_CHAR
                      orderS = 1 !  fv-fv
@@ -528,7 +531,7 @@ contains
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "bilinear", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdSa2o, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, trim(wgtIdSa2o)//C_NULL_CHAR, &
                                                    trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -546,7 +549,7 @@ contains
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdFa2o, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, trim(wgtIdFa2o)//C_NULL_CHAR, &
                                                    trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -559,11 +562,14 @@ contains
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! no need to read areas
-                  call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
+                  call moab_map_init_rcfile(mapper_Fa2o, type1, &
                         'seq_maps.rc', 'atm2ocn_fmapname:', 'atm2ocn_fmaptype:',samegrid_ao, &
                         arearead, wgtIdFa2o, 'mapper_Fa2o moab initialization', esmf_map_flag)
 
-                  call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
+                  mapper_Sa2o%src_mbid = mbaxid
+                  mapper_Sa2o%tgt_mbid = mboxid
+                  mapper_Sa2o%intx_mbid = mbintxao
+                  call moab_map_init_rcfile(mapper_Sa2o, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
                         arearead, wgtIdSa2o, 'mapper_Sa2o moab initialization', esmf_map_flag)
                endif
@@ -576,7 +582,7 @@ contains
                ! and viceversa, based on element GLOBAL_ID matching. In order to seamless produce the
                ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
                ! coupler.
-              if (atm_pg_active) then
+              if (atm_pg_active .or. mb_dead_comps) then
                   type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
               else
                   type1 = 2 ! in the spectral case, the type on coupler will be point cloud
@@ -605,7 +611,6 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2o'
           end if
-          call seq_map_mapinit(mapper_Sa2o, mpicom_CPLID)
           if (samegrid_ao) then
              mapper_Sa2o%rearrange_only = .true.
              mapper_Sa2o%strategy = "rearrange"
@@ -647,7 +652,10 @@ contains
             if (.not. compute_maps_online_a2o .and. .not. samegrid_ao ) then
                type1 = 3 ! this is type of grid
                arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mbaxid, mboxid, mbintxao, type1, &
+               mapper_Va2o%src_mbid = mbaxid
+               mapper_Va2o%tgt_mbid = mboxid
+               mapper_Va2o%intx_mbid = mbintxao
+               call moab_map_init_rcfile( mapper_Va2o, type1, &
                      'seq_maps.rc', 'atm2ocn_vmapname:', 'atm2ocn_vmaptype:', samegrid_ao, &
                      arearead, wgtIdVa2o, 'mapper_Va2o MOAB initialization', esmf_map_flag)
 
@@ -757,10 +765,10 @@ contains
           call seq_comm_getData(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
           call seq_comm_getData(CPLID, mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
 
-          appname = "ROF_OCN_COU"//CHAR(0)
+          appname = "ROF_OCN_COU"
             ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
           rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid, mbintxro)
+          ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, rmapid, mbintxro)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in registering rof 2 ocn moab map '
              call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')
@@ -775,7 +783,10 @@ contains
           if (.not. compute_maps_online_r2o .and. .not. samegrid_ro) then
             type_grid = 3 ! this is type of grid
             arearead = 1 ! read area_a for river model
-            call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+            mapper_Rr2o_liq%src_mbid = mbrxid
+            mapper_Rr2o_liq%tgt_mbid = mboxid
+            mapper_Rr2o_liq%intx_mbid = mbintxro
+            call moab_map_init_rcfile( mapper_Rr2o_liq, type_grid, &
                   'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:', samegrid_ro, &
                   arearead, wgtIdFr2ol, 'mapper_Rr2o_liq MOAB initialization', esmf_map_flag )
           end if
@@ -856,16 +867,16 @@ contains
          end if
 
          ! If loading map from disk, then load the R2O_ice map
-         if (.not. compute_maps_online_r2o  .and. .not. samegrid_ro) then
-            type_grid = 3 ! this is type of grid
-            arearead = 0 ! no need for areas
-            call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
-                  'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:', samegrid_ro, &
-                  arearead, wgtIdFr2oi, 'mapper_Rr2o_ice moab initialization', esmf_map_flag, wgtIdFr2ol )
-         end if
          mapper_Rr2o_ice%src_mbid = mbrxid
          mapper_Rr2o_ice%tgt_mbid = mboxid
          mapper_Rr2o_ice%intx_mbid = mbintxro
+         if (.not. compute_maps_online_r2o  .and. .not. samegrid_ro) then
+            type_grid = 3 ! this is type of grid
+            arearead = 0 ! no need for areas
+            call moab_map_init_rcfile( mapper_Rr2o_ice, type_grid, &
+                  'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:', samegrid_ro, &
+                  arearead, wgtIdFr2oi, 'mapper_Rr2o_ice moab initialization', esmf_map_flag, wgtIdFr2ol )
+         end if
          mapper_Rr2o_ice%src_context = rof(1)%cplcompid
          mapper_Rr2o_ice%intx_context = rmapid ! read map is the same context as intersection now
          mapper_Rr2o_ice%weight_identifier = wgtIdFr2oi
@@ -890,7 +901,10 @@ contains
             if (.not. compute_maps_online_r2o .and. .not. samegrid_ro) then
                type_grid = 3 ! this is type of grid
                arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+               mapper_Fr2o%src_mbid = mbrxid
+               mapper_Fr2o%tgt_mbid = mboxid
+               mapper_Fr2o%intx_mbid = mbintxro
+               call moab_map_init_rcfile( mapper_Fr2o, type_grid, &
                      'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:', samegrid_ro, &
                      arearead, wgtIdFr2o, 'mapper_Fr2o MOAB initialization', esmf_map_flag, wgtIdFr2ol )
             end if
@@ -1180,6 +1194,28 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     integer, save :: index_r2x_Flrr_flood
     integer, save :: index_g2x_Fogg_rofl
     integer, save :: index_g2x_Fogg_rofi
+    integer, save :: index_r2x_Forr_rofDIN
+    integer, save :: index_r2x_Forr_rofDIP
+    integer, save :: index_r2x_Forr_rofDON
+    integer, save :: index_r2x_Forr_rofDOP
+    integer, save :: index_r2x_Forr_rofDOC
+    integer, save :: index_r2x_Forr_rofPP
+    integer, save :: index_r2x_Forr_rofDSi
+    integer, save :: index_r2x_Forr_rofPOC
+    integer, save :: index_r2x_Forr_rofPN
+    integer, save :: index_r2x_Forr_rofDIC
+    integer, save :: index_r2x_Forr_rofFe
+    integer, save :: index_x2o_Foxx_rofDIN
+    integer, save :: index_x2o_Foxx_rofDIP
+    integer, save :: index_x2o_Foxx_rofDON
+    integer, save :: index_x2o_Foxx_rofDOP
+    integer, save :: index_x2o_Foxx_rofDOC
+    integer, save :: index_x2o_Foxx_rofPP
+    integer, save :: index_x2o_Foxx_rofDSi
+    integer, save :: index_x2o_Foxx_rofPOC
+    integer, save :: index_x2o_Foxx_rofPN
+    integer, save :: index_x2o_Foxx_rofDIC
+    integer, save :: index_x2o_Foxx_rofFe
     integer, save :: index_x2o_Foxx_swnet
     integer, save :: index_x2o_Faxa_snow
     integer, save :: index_x2o_Faxa_rain
@@ -1314,6 +1350,19 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
        index_a2x_Faxa_rainl     = mct_aVect_indexRA(a2x_o,'Faxa_rainl')
        index_r2x_Forr_rofl      = mct_aVect_indexRA(r2x_o,'Forr_rofl')
        index_r2x_Forr_rofi      = mct_aVect_indexRA(r2x_o,'Forr_rofi')
+       if (rof2ocn_nutrients) then
+          index_r2x_Forr_rofDIN    = mct_aVect_indexRA(r2x_o,'Forr_rofDIN')
+          index_r2x_Forr_rofDIP    = mct_aVect_indexRA(r2x_o,'Forr_rofDIP')
+          index_r2x_Forr_rofDON    = mct_aVect_indexRA(r2x_o,'Forr_rofDON')
+          index_r2x_Forr_rofDOP    = mct_aVect_indexRA(r2x_o,'Forr_rofDOP')
+          index_r2x_Forr_rofDOC    = mct_aVect_indexRA(r2x_o,'Forr_rofDOC')
+          index_r2x_Forr_rofPP     = mct_aVect_indexRA(r2x_o,'Forr_rofPP')
+          index_r2x_Forr_rofDSi    = mct_aVect_indexRA(r2x_o,'Forr_rofDSi')
+          index_r2x_Forr_rofPOC    = mct_aVect_indexRA(r2x_o,'Forr_rofPOC')
+          index_r2x_Forr_rofPN     = mct_aVect_indexRA(r2x_o,'Forr_rofPN')
+          index_r2x_Forr_rofDIC    = mct_aVect_indexRA(r2x_o,'Forr_rofDIC')
+          index_r2x_Forr_rofFe     = mct_aVect_indexRA(r2x_o,'Forr_rofFe')
+       endif
        index_r2x_Flrr_flood     = mct_aVect_indexRA(r2x_o,'Flrr_flood')
        !index_g2x_Fogg_rofl      = mct_aVect_indexRA(g2x_o,'Fogg_rofl')
        !index_g2x_Fogg_rofi      = mct_aVect_indexRA(g2x_o,'Fogg_rofi')
@@ -1322,6 +1371,19 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
        index_x2o_Faxa_prec      = mct_aVect_indexRA(x2o_o,'Faxa_prec')
        index_x2o_Foxx_rofl      = mct_aVect_indexRA(x2o_o,'Foxx_rofl')
        index_x2o_Foxx_rofi      = mct_aVect_indexRA(x2o_o,'Foxx_rofi')
+       if (rof2ocn_nutrients) then
+          index_x2o_Foxx_rofDIN    = mct_aVect_indexRA(x2o_o,'Foxx_rofDIN')
+          index_x2o_Foxx_rofDIP    = mct_aVect_indexRA(x2o_o,'Foxx_rofDIP')
+          index_x2o_Foxx_rofDON    = mct_aVect_indexRA(x2o_o,'Foxx_rofDON')
+          index_x2o_Foxx_rofDOP    = mct_aVect_indexRA(x2o_o,'Foxx_rofDOP')
+          index_x2o_Foxx_rofDOC    = mct_aVect_indexRA(x2o_o,'Foxx_rofDOC')
+          index_x2o_Foxx_rofPP     = mct_aVect_indexRA(x2o_o,'Foxx_rofPP')
+          index_x2o_Foxx_rofDSi    = mct_aVect_indexRA(x2o_o,'Foxx_rofDSi')
+          index_x2o_Foxx_rofPOC    = mct_aVect_indexRA(x2o_o,'Foxx_rofPOC')
+          index_x2o_Foxx_rofPN     = mct_aVect_indexRA(x2o_o,'Foxx_rofPN')
+          index_x2o_Foxx_rofDIC    = mct_aVect_indexRA(x2o_o,'Foxx_rofDIC')
+          index_x2o_Foxx_rofFe     = mct_aVect_indexRA(x2o_o,'Foxx_rofFe')
+       endif
 
        if (seq_flds_i2o_per_cat) then
           index_x2o_Sf_afrac          = mct_aVect_indexRA(x2o_o,'Sf_afrac')
@@ -1831,10 +1893,24 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
        if (rof_c2_ocn_saved) then
          x2o_om(n,index_x2o_Foxx_rofl) = (r2x_om(n,index_r2x_Forr_rofl ) + &
-            r2x_om(n,index_r2x_Flrr_flood) )
+            r2x_om(n,index_r2x_Flrr_flood) ) * flux_epbalfact
            ! g2x_om(n,index_g2x_Fogg_rofl )) * flux_epbalfact
          x2o_om(n,index_x2o_Foxx_rofi) = (r2x_om(n,index_r2x_Forr_rofi ) ) * flux_epbalfact
           !  g2x_om(n,index_g2x_Fogg_rofi )) * flux_epbalfact
+
+         if (rof2ocn_nutrients) then
+            x2o_om(n,index_x2o_Foxx_rofDIN) = r2x_om(n,index_r2x_Forr_rofDIN)
+            x2o_om(n,index_x2o_Foxx_rofDIP) = r2x_om(n,index_r2x_Forr_rofDIP)
+            x2o_om(n,index_x2o_Foxx_rofDON) = r2x_om(n,index_r2x_Forr_rofDON)
+            x2o_om(n,index_x2o_Foxx_rofDOP) = r2x_om(n,index_r2x_Forr_rofDOP)
+            x2o_om(n,index_x2o_Foxx_rofDOC) = r2x_om(n,index_r2x_Forr_rofDOC)
+            x2o_om(n,index_x2o_Foxx_rofPP ) = r2x_om(n,index_r2x_Forr_rofPP )
+            x2o_om(n,index_x2o_Foxx_rofDSi) = r2x_om(n,index_r2x_Forr_rofDSi)
+            x2o_om(n,index_x2o_Foxx_rofPOC) = r2x_om(n,index_r2x_Forr_rofPOC)
+            x2o_om(n,index_x2o_Foxx_rofPN ) = r2x_om(n,index_r2x_Forr_rofPN )
+            x2o_om(n,index_x2o_Foxx_rofDIC) = r2x_om(n,index_r2x_Forr_rofDIC)
+            x2o_om(n,index_x2o_Foxx_rofFe)  = r2x_om(n,index_r2x_Forr_rofFe )
+         endif
        endif
 
        if ( index_x2o_Foxx_rofl_16O /= 0 .and. rof_c2_ocn_saved ) then

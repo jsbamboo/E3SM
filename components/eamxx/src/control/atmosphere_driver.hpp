@@ -7,7 +7,6 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/data_managers/IOPDataManager.hpp"
 #include "share/data_managers/SCDataManager.hpp"
@@ -106,6 +105,9 @@ public:
   // tms' surface drag coefficient.
   void setup_shoc_tms_links();
 
+  // Propagate HOMME's parsed 3D turbulence flag to SHOC's internal runtime option.
+  void setup_shoc_3d_turbulence_link();
+
   // Add column data to all pre/postcondition property checks
   // for use in output.
   void add_additional_column_data_to_property_checks ();
@@ -182,10 +184,6 @@ protected:
   void set_initial_conditions ();
   void restart_model ();
 
-  // Read fields from a file
-  void read_fields_from_file (const std::vector<Field>& fields,
-                              const std::shared_ptr<const AbstractGrid>& grid,
-                              const std::string& file_name);
   void register_groups ();
 
   template<typename T>
